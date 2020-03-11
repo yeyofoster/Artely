@@ -1,0 +1,28 @@
+name: prueba_maps
+description: A new Flutter project.
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.2.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  cupertino_icons: ^0.1.2
+  geolocator: ^5.2.0
+  google_maps_flutter: ^0.5.21
+  permission_handler: ^4.2.0+hotfix.2
+  http: ^0.12.0+4
+  flutter_polyline_points: ^0.1.0
+  cloud_firestore: ^0.13.3
+  firebase_auth: ^0.15.5+2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+    
+flutter:
+
+  uses-material-design: true

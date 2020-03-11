@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "503836827184",
+    "firebase_url": "https://artely-92d92.firebaseio.com",
+    "project_id": "artely-92d92",
+    "storage_bucket": "artely-92d92.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:503836827184:android:5ea6f45d316eaee93d17f5",
+        "android_client_info": {
+          "package_name": "com.example.prueba_maps"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "503836827184-p96ssohd8bc9ei913sh94vd4p311tks6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlrUAY3C45istIE2NcbhhKeOfveVWFaqo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "503836827184-p96ssohd8bc9ei913sh94vd4p311tks6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
