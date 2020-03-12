@@ -1,4 +1,4 @@
-package com.example.prueba_maps
+package com.example.artely_app
 
 import android.os.Bundle
 

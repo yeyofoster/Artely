@@ -8,12 +8,20 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:503836827184:android:5ea6f45d316eaee93d17f5",
+        "mobilesdk_app_id": "1:503836827184:android:38a3ef2b83805a463d17f5",
         "android_client_info": {
-          "package_name": "com.example.prueba_maps"
+          "package_name": "com.example.artely_app"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "503836827184-b6v7mfi5qkdqoqtl192l7f7bjm49kiag.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.artely_app",
+            "certificate_hash": "2e1b3307118a9e6b3f47671a9c9bb912057c901d"
+          }
+        },
         {
           "client_id": "503836827184-p96ssohd8bc9ei913sh94vd4p311tks6.apps.googleusercontent.com",
           "client_type": 3

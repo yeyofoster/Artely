@@ -291,6 +291,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     BusquedaMaps busqueda = BusquedaMaps();
     busqueda.search = value;
     http.Response res = await http.get(busqueda.urlBusqueda);
+    debugPrint(res.body);
     PlacesMaps placesMaps = PlacesMaps.fromJson(jsonDecode(res.body));
     setState(() {
       lugares = Set.from(placesMaps.results);

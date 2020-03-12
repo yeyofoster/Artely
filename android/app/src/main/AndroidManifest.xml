@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.prueba_maps">
+    package="com.example.artely_app">
 
     <!-- io.flutter.app.FlutterApplication is an android.app.Application that
          calls FlutterMain.startInitialization(this); in its onCreate method.
@@ -15,7 +15,7 @@
         android:label="Artely"
         android:icon="@mipmap/ic_launcher">
         <meta-data android:name="com.google.android.geo.API_KEY"
-               android:value="AIzaSyAoejORgdarZvJ5Va_jPeGux76yLYgcHHY"/>
+               android:value="AIzaSyD18jrJ0uzDz-Pt3hg2YLCXjxpEkCAYJ2c"/>
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"
