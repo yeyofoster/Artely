@@ -44,6 +44,8 @@ class _MapaArtelyState extends State<MapaArtely> {
   Set<Results> lugares = Set();
   Set<Rutas.Routes> rutas = Set();
   Set<Polyline> polylinesRutas = {};
+  Widget botonesWidget;
+  StreamSubscription<Position> positionStream;
 
   final backgroundtext = 'Buscar';
   //Terminan variables
@@ -51,6 +53,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   @override
   void initState() {
     super.initState();
+    _inicializaWidgets();
     _verificarPermisos();
   }
 
@@ -97,7 +100,10 @@ class _MapaArtelyState extends State<MapaArtely> {
             Positioned(
               top: _maxheight * 0.85,
               left: _maxwidth * 0.07,
-              child: _botonRuta(),
+              child: AnimatedSwitcher(
+                duration: Duration(milliseconds: 700),
+                child: botonesWidget,
+              ),
             ),
           ],
         ),
@@ -200,6 +206,7 @@ class _MapaArtelyState extends State<MapaArtely> {
           position.latitude.toString() +
           'Lng: ' +
           position.longitude.toString();
+      print(pos);
 
       marcadores.add(
         Marker(
@@ -216,10 +223,15 @@ class _MapaArtelyState extends State<MapaArtely> {
     setState(() {
       marcadores.clear();
       polylinesRutas.clear();
+      botonesWidget = Container();
+      if (positionStream != null) {
+       positionStream.pause(); 
+       positionStream.cancel();
+      }
     });
   }
 
-  //Método encargado de crear el mapa. Lo retorna como widget.
+  //Método encargado de crear el mapa. 67Lo retorna como widget.
   GoogleMap _creaMapa() {
     return GoogleMap(
       mapType: MapType.normal,
@@ -291,7 +303,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     BusquedaMaps busqueda = BusquedaMaps();
     busqueda.search = value;
     http.Response res = await http.get(busqueda.urlBusqueda);
-    debugPrint(res.body);
+    //debugPrint(res.body);
     PlacesMaps placesMaps = PlacesMaps.fromJson(jsonDecode(res.body));
     setState(() {
       lugares = Set.from(placesMaps.results);
@@ -332,6 +344,7 @@ class _MapaArtelyState extends State<MapaArtely> {
                     onTap: () {
                       print(index);
                       _addMarcador(index);
+                      _botonRuta();
                     });
               },
             ),
@@ -373,42 +386,65 @@ class _MapaArtelyState extends State<MapaArtely> {
   }
 
   Widget _botonRuta() {
-    return FutureBuilder(
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
-        if (marcadores.length >= 2) {
-          return FlatButton(
-            color: Colors.red,
-            highlightColor: Colors.blue,
-            padding: EdgeInsets.only(
-              left: 0.0,
-              top: 13.0,
-              bottom: 13.0,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            textTheme: ButtonTextTheme.primary,
-            onPressed: () {
-              generarRuta();
-            },
-            child: Row(
-              children: <Widget>[
-                Icon(Icons.play_circle_filled),
-                SizedBox(
-                  width: 5.0,
+    if (marcadores.length >= 2) {
+      setState(() {
+        botonesWidget = Container(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              FlatButton.icon(
+                onPressed: () {
+                  generarRuta('driving');
+                },
+                color: Colors.blue,
+                icon: Icon(Icons.directions_car),
+                label: Text('Auto'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(15.0),
+                    bottomLeft: Radius.circular(15.0),
+                  ),
                 ),
-                Text('Ruta'),
-              ],
-            ),
-          );
-        } else {
-          return Container();
-        }
-      },
+              ),
+              FlatButton.icon(
+                onPressed: () {
+                  setState(() {
+                    botonesWidget = Container(
+                      child: FlatButton.icon(
+                        onPressed: () {},
+                        color: Colors.red,
+                        icon: Icon(Icons.play_arrow),
+                        label: Text('Iniciar'),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.0),
+                        ),
+                      ),
+                    );
+                  });
+                  generarRuta('walking');
+                },
+                color: Colors.green,
+                icon: Icon(Icons.directions_walk),
+                label: Text('Pie'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(15.0),
+                    bottomRight: Radius.circular(15.0),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      });
+    }
+    return AnimatedSwitcher(
+      duration: Duration(milliseconds: 1500),
+      child: botonesWidget,
     );
   }
 
-  Future<void> generarRuta() async {
+  Future<void> generarRuta(String modo) async {
     BusquedaRoutes busqueda = BusquedaRoutes();
     int colorswitch = 0;
     int cuentaSteps = 0;
@@ -423,6 +459,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     print('Destino = $destino');
     busqueda.origen = origen;
     busqueda.destino = destino;
+    busqueda.modo = modo;
     http.Response res = await http.get(busqueda.urlRoutes);
     //debugPrint(res.body);
     RoutesMaps response = RoutesMaps.fromJson(jsonDecode(res.body));
@@ -430,44 +467,57 @@ class _MapaArtelyState extends State<MapaArtely> {
       (routes) {
         routes.legs.forEach(
           (legs) {
-            legs.steps.forEach(
-              (steps) {
-                encodedRuta = encodedRuta + '${steps.polyline.points}  ';
-                List<LatLng> coordenadasPolilyne =
-                    decodeEncodedPolyline(steps.polyline.points);
-                cuentaSteps++;
-                PolylineId idRuta = PolylineId('Step $cuentaSteps');
-                print('Step $cuentaSteps' +
-                    '  Puntos: ${coordenadasPolilyne.length}');
-                coordenadasPolilyne.forEach(
-                  (punto) async {
-                    double distancia = await Geolocator().distanceBetween(
-                        coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
-                        coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
-                        coordenadasPolilyne.elementAt(indexPunto).latitude,
-                        coordenadasPolilyne.elementAt(indexPunto).longitude);
-                    print(punto.toString() +
-                        '\tDistancia al siguiente punto: $distancia');
-                    indexPunto++;
-                  },
+            legs.steps.forEach((steps) {
+              encodedRuta = encodedRuta + '${steps.polyline.points}  ';
+              List<LatLng> coordenadasPolilyne =
+                  decodeEncodedPolyline(steps.polyline.points);
+              cuentaSteps++;
+              PolylineId idRuta = PolylineId('Step $cuentaSteps');
+              /*
+              print('Step $cuentaSteps' +
+                  '  Puntos: ${coordenadasPolilyne.length}');
+              coordenadasPolilyne.forEach(
+                (punto) async {
+                  double distancia = await Geolocator().distanceBetween(
+                      coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
+                      coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
+                      coordenadasPolilyne.elementAt(indexPunto).latitude,
+                      coordenadasPolilyne.elementAt(indexPunto).longitude);
+                  print(punto.toString() +
+                      '\tDistancia al siguiente punto: $distancia');
+                  indexPunto++;
+                },
+              );
+              */
+              setState(() {
+                colorswitch++;
+                if (colorswitch / 1 > 1) {
+                  colorswitch = 0;
+                }
+                Polyline temppoly = Polyline(
+                  polylineId: idRuta,
+                  color: colores.elementAt(colorswitch),
+                  width: 5,
+                  points: coordenadasPolilyne,
+                  startCap: Cap.roundCap,
+                  endCap: Cap.roundCap,
                 );
-                setState(() {
-                  colorswitch++;
-                  if (colorswitch / 1 > 1) {
-                    colorswitch = 0;
-                  }
-                  Polyline temppoly = Polyline(
-                    polylineId: idRuta,
-                    color: colores.elementAt(colorswitch),
-                    width: 5,
-                    points: coordenadasPolilyne,
-                    startCap: Cap.roundCap,
-                    endCap: Cap.roundCap,
-                  );
-                  polylinesRutas.add(temppoly);
-                });
-              },
-            );
+                polylinesRutas.add(temppoly);
+                botonesWidget = Container(
+                  child: FlatButton.icon(
+                    onPressed: () {
+                      iniciarViaje();
+                    },
+                    color: Colors.red,
+                    icon: Icon(Icons.play_arrow),
+                    label: Text('Iniciar'),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15.0),
+                    ),
+                  ),
+                );
+              });
+            });
           },
         );
         LatLng suroeste =
@@ -480,19 +530,19 @@ class _MapaArtelyState extends State<MapaArtely> {
         print(encodedRuta);
       },
       /*
-      (index) {
-        List<LatLng> coordenadasPolilyne =
-            decodeEncodedPolyline(index.overviewPolyline.points);
-        LatLng suroeste =
-            LatLng(index.bounds.southwest.lat, index.bounds.southwest.lng);
-        LatLng noreste =
-            LatLng(index.bounds.northeast.lat, index.bounds.northeast.lng);
-        LatLngBounds limites =
-            LatLngBounds(southwest: suroeste, northeast: noreste);
-        PolylineId idRuta = PolylineId(index.summary);
-        agregaPolyline(coordenadasPolilyne, limites, idRuta);
-      },
-      */
+                            (index) {
+                              List<LatLng> coordenadasPolilyne =
+                                  decodeEncodedPolyline(index.overviewPolyline.points);
+                              LatLng suroeste =
+                                  LatLng(index.bounds.southwest.lat, index.bounds.southwest.lng);
+                              LatLng noreste =
+                                  LatLng(index.bounds.northeast.lat, index.bounds.northeast.lng);
+                              LatLngBounds limites =
+                                  LatLngBounds(southwest: suroeste, northeast: noreste);
+                              PolylineId idRuta = PolylineId(index.summary);
+                              agregaPolyline(coordenadasPolilyne, limites, idRuta);
+                            },
+                            */
     );
   }
 
@@ -509,9 +559,41 @@ class _MapaArtelyState extends State<MapaArtely> {
     });
     print('Num. Rutas = ${polylinesRutas.length}');
     /*
-    coordenadasPolilyne.forEach((punto) {
-      print(punto);
+                          coordenadasPolilyne.forEach((punto) {
+                            print(punto);
+                          });
+                          */
+  }
+
+  void _inicializaWidgets() {
+    setState(() {
+      botonesWidget = Container();
     });
-    */
+  }
+
+  void iniciarViaje() {
+    setState(() async {
+      Position inicio = await Geolocator()
+          .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
+      _moverConZoom(inicio, 20.0);
+
+      Geolocator geolocator = Geolocator();
+      LocationOptions locationOptions = LocationOptions(
+        accuracy: LocationAccuracy.best,
+        timeInterval: 4000,
+      );
+      positionStream = geolocator.getPositionStream(locationOptions).listen(
+        (Position position) {
+          if (position == null) {
+            print('Error al obtener la ubicación');
+          } else {
+            print(
+                'Lat: ${position.latitude} Lng: ${position.longitude} Tiempo: ${position.timestamp}');
+            _moverConZoom(position, 20.0);
+          }
+        },
+      );
+    });
   }
 }
