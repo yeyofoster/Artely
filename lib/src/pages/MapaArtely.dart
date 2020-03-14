@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -46,6 +47,8 @@ class _MapaArtelyState extends State<MapaArtely> {
   Set<Polyline> polylinesRutas = {};
   Widget botonesWidget;
   StreamSubscription<Position> positionStream;
+  String encodedRuta = '';
+  String tipo;
 
   final backgroundtext = 'Buscar';
   //Terminan variables
@@ -224,9 +227,11 @@ class _MapaArtelyState extends State<MapaArtely> {
       marcadores.clear();
       polylinesRutas.clear();
       botonesWidget = Container();
+      encodedRuta = '';
+      tipo = '';
       if (positionStream != null) {
-       positionStream.pause(); 
-       positionStream.cancel();
+        positionStream.pause();
+        positionStream.cancel();
       }
     });
   }
@@ -394,6 +399,7 @@ class _MapaArtelyState extends State<MapaArtely> {
             children: <Widget>[
               FlatButton.icon(
                 onPressed: () {
+                  tipo = '1';
                   generarRuta('driving');
                 },
                 color: Colors.blue,
@@ -408,19 +414,7 @@ class _MapaArtelyState extends State<MapaArtely> {
               ),
               FlatButton.icon(
                 onPressed: () {
-                  setState(() {
-                    botonesWidget = Container(
-                      child: FlatButton.icon(
-                        onPressed: () {},
-                        color: Colors.red,
-                        icon: Icon(Icons.play_arrow),
-                        label: Text('Iniciar'),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15.0),
-                        ),
-                      ),
-                    );
-                  });
+                  tipo = '2';
                   generarRuta('walking');
                 },
                 color: Colors.green,
@@ -449,7 +443,6 @@ class _MapaArtelyState extends State<MapaArtely> {
     int colorswitch = 0;
     int cuentaSteps = 0;
     int indexPunto = 1;
-    String encodedRuta = '';
     Set<MaterialColor> colores = {Colors.red, Colors.blue};
     String origen =
         '${marcadores.elementAt(0).position.latitude},${marcadores.elementAt(0).position.longitude}';
@@ -473,9 +466,9 @@ class _MapaArtelyState extends State<MapaArtely> {
                   decodeEncodedPolyline(steps.polyline.points);
               cuentaSteps++;
               PolylineId idRuta = PolylineId('Step $cuentaSteps');
-              /*
               print('Step $cuentaSteps' +
                   '  Puntos: ${coordenadasPolilyne.length}');
+
               coordenadasPolilyne.forEach(
                 (punto) async {
                   double distancia = await Geolocator().distanceBetween(
@@ -488,7 +481,7 @@ class _MapaArtelyState extends State<MapaArtely> {
                   indexPunto++;
                 },
               );
-              */
+
               setState(() {
                 colorswitch++;
                 if (colorswitch / 1 > 1) {
@@ -529,20 +522,6 @@ class _MapaArtelyState extends State<MapaArtely> {
         _moverRuta(limites, 35.0);
         print(encodedRuta);
       },
-      /*
-                            (index) {
-                              List<LatLng> coordenadasPolilyne =
-                                  decodeEncodedPolyline(index.overviewPolyline.points);
-                              LatLng suroeste =
-                                  LatLng(index.bounds.southwest.lat, index.bounds.southwest.lng);
-                              LatLng noreste =
-                                  LatLng(index.bounds.northeast.lat, index.bounds.northeast.lng);
-                              LatLngBounds limites =
-                                  LatLngBounds(southwest: suroeste, northeast: noreste);
-                              PolylineId idRuta = PolylineId(index.summary);
-                              agregaPolyline(coordenadasPolilyne, limites, idRuta);
-                            },
-                            */
     );
   }
 
@@ -573,15 +552,45 @@ class _MapaArtelyState extends State<MapaArtely> {
 
   void iniciarViaje() {
     setState(() async {
+      DocumentReference databaseReference = Firestore.instance
+          .collection('Artely_BD')
+          .document('MhGwMNc7a0cZLS0nf7GV6tx60jM2')
+          .collection('Viajes')
+          .document();
+      DocumentReference actualizador = Firestore.instance
+          .collection('Artely_BD')
+          .document('MhGwMNc7a0cZLS0nf7GV6tx60jM2')
+          .collection('Viajes')
+          .document(databaseReference.documentID);
+
       Position inicio = await Geolocator()
           .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
 
       _moverConZoom(inicio, 20.0);
 
+      Map<String, dynamic> datosviaje = {
+        "Porigen": new GeoPoint(inicio.latitude, inicio.longitude),
+        "Pdestino": new GeoPoint(marcadores.elementAt(1).position.latitude,
+            marcadores.elementAt(1).position.longitude),
+        "Encoded polyline": encodedRuta,
+        "Tipo": tipo,
+        "Pactual": new GeoPoint(inicio.latitude, inicio.longitude),
+        "Inicio Viaje": DateTime.now(),
+        "Fin de viaje": null,
+      };
+
+      try {
+        databaseReference.setData(datosviaje);
+        print(databaseReference.runtimeType);
+        print(databaseReference.documentID);
+      } catch (error) {
+        print(error);
+      }
+
       Geolocator geolocator = Geolocator();
       LocationOptions locationOptions = LocationOptions(
         accuracy: LocationAccuracy.best,
-        timeInterval: 4000,
+        timeInterval: 5000,
       );
       positionStream = geolocator.getPositionStream(locationOptions).listen(
         (Position position) {
@@ -590,6 +599,13 @@ class _MapaArtelyState extends State<MapaArtely> {
           } else {
             print(
                 'Lat: ${position.latitude} Lng: ${position.longitude} Tiempo: ${position.timestamp}');
+
+            actualizador.updateData(
+              {
+                "Pactual": new GeoPoint(position.latitude, position.longitude),
+              },
+            );
+
             _moverConZoom(position, 20.0);
           }
         },
