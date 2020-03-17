@@ -287,6 +287,24 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
           mostrarAlerta(context, 'Bienvenido', 'Usuario agregado con exito');
         },
       );
+      final viajesColeccion = Firestore.instance
+          .collection('Artely_BD')
+          .document(user.uid)
+          .collection('Viajes')
+          .document();
+      final cuidadoresColeccion = Firestore.instance
+          .collection('Artely_BD')
+          .document(user.uid)
+          .collection('Cuidadores')
+          .document();
+      final sitiosColeccion = Firestore.instance
+          .collection('Artely_BD')
+          .document(user.uid)
+          .collection('Sitios comunes')
+          .document();
+      viajesColeccion.setData({});
+      cuidadoresColeccion.setData({});
+      sitiosColeccion.setData({});
     } catch (e) {
       print(e.toString());
       print(e.code);

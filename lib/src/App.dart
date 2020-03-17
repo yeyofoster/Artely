@@ -9,7 +9,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Artely',
       routes: getApplicationRoutes(),
-      initialRoute: 'mapa',
+      initialRoute: '/',
       onGenerateRoute: (RouteSettings settings) {
         print('La ruta ${settings.name} no fue encontrada.');
         return MaterialPageRoute(

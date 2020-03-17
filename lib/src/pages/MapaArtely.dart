@@ -554,12 +554,12 @@ class _MapaArtelyState extends State<MapaArtely> {
     setState(() async {
       DocumentReference databaseReference = Firestore.instance
           .collection('Artely_BD')
-          .document('MhGwMNc7a0cZLS0nf7GV6tx60jM2')
+          .document('cdjeoEX41IUInn9mqPon3sD8gUo1')
           .collection('Viajes')
           .document();
       DocumentReference actualizador = Firestore.instance
           .collection('Artely_BD')
-          .document('MhGwMNc7a0cZLS0nf7GV6tx60jM2')
+          .document('cdjeoEX41IUInn9mqPon3sD8gUo1')
           .collection('Viajes')
           .document(databaseReference.documentID);
 
