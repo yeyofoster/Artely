@@ -46,9 +46,11 @@ class _MapaArtelyState extends State<MapaArtely> {
   Set<Rutas.Routes> rutas = Set();
   Set<Polyline> polylinesRutas = {};
   Widget botonesWidget;
+  Widget barraSuperior;
   StreamSubscription<Position> positionStream;
   String encodedRuta = '';
   String tipo;
+  bool enViaje = false;
 
   final backgroundtext = 'Buscar';
   //Terminan variables
@@ -65,6 +67,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     //Variables de ancho y largo de la pantalla del dispositivo
     final _maxwidth = MediaQuery.of(context).size.width;
     final _maxheight = MediaQuery.of(context).size.height;
+    cargaBarraSuperior(context);
 
     return SafeArea(
       child: Scaffold(
@@ -91,6 +94,10 @@ class _MapaArtelyState extends State<MapaArtely> {
                 //color: Colors.blue,
                 child: Column(
                   children: <Widget>[
+                    AnimatedSwitcher(
+                      duration: Duration(milliseconds: 700),
+                      child: barraSuperior,
+                    ),
                     _searchBarMaps(),
                     SizedBox(
                       height: 5.0,
@@ -229,6 +236,28 @@ class _MapaArtelyState extends State<MapaArtely> {
       botonesWidget = Container();
       encodedRuta = '';
       tipo = '';
+      enViaje = false;
+      /*
+      Firestore.instance
+          .collection('Artely_BD')
+          .document('mFlnuFQOzcPl59aszt7ez1YipmY2')
+          .updateData(
+        {
+          'Viaje': {
+            'En_viaje': false,
+            /*
+            'Encoded polyline': '',
+            'PActual': null,
+            'PDestino': null,
+            'Porigen': null,
+            "Inicio Viaje": null,
+            "Fin de viaje": null,
+            'Tipo_Viaje': 1
+            */
+          },
+        },
+      );
+      */
       if (positionStream != null) {
         positionStream.pause();
         positionStream.cancel();
@@ -440,10 +469,10 @@ class _MapaArtelyState extends State<MapaArtely> {
 
   Future<void> generarRuta(String modo) async {
     BusquedaRoutes busqueda = BusquedaRoutes();
-    int colorswitch = 0;
-    int cuentaSteps = 0;
+    int cuentaRutas = 0;
     int indexPunto = 1;
-    Set<MaterialColor> colores = {Colors.red, Colors.blue};
+    Set<MaterialColor> colores = {Colors.blue, Colors.red, Colors.green};
+
     String origen =
         '${marcadores.elementAt(0).position.latitude},${marcadores.elementAt(0).position.longitude}';
     String destino =
@@ -458,61 +487,79 @@ class _MapaArtelyState extends State<MapaArtely> {
     RoutesMaps response = RoutesMaps.fromJson(jsonDecode(res.body));
     response.routes.forEach(
       (routes) {
+        if (cuentaRutas >= 3) {
+          cuentaRutas = 0;
+        }
+
+        List<LatLng> coordenadasPolilyne =
+            decodeEncodedPolyline(routes.overviewPolyline.points);
+        print('Ruta ${cuentaRutas + 1}');
+        coordenadasPolilyne.forEach((punto) async {
+          double distancia = await Geolocator().distanceBetween(
+              coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
+              coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
+              coordenadasPolilyne.elementAt(indexPunto).latitude,
+              coordenadasPolilyne.elementAt(indexPunto).longitude);
+          print(
+              punto.toString() + '\tDistancia al siguiente punto: $distancia');
+          indexPunto++;
+        });
+        PolylineId idRuta = PolylineId('Ruta ${cuentaRutas + 1}');
+        setState(() {
+          Polyline temppoly = Polyline(
+              polylineId: idRuta,
+              color: colores.elementAt(cuentaRutas),
+              width: 5,
+              points: coordenadasPolilyne,
+              startCap: Cap.roundCap,
+              endCap: Cap.roundCap,
+              onTap: () {
+                print('Ha seleccionado la ruta: $idRuta');
+              });
+          polylinesRutas.add(temppoly);
+          botonesWidget = Container(
+            child: FlatButton.icon(
+              onPressed: () {
+                iniciarViaje();
+              },
+              color: Colors.red,
+              icon: Icon(Icons.play_arrow),
+              label: Text('Iniciar'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15.0),
+              ),
+            ),
+          );
+          cuentaRutas++;
+        });
+
         routes.legs.forEach(
           (legs) {
             legs.steps.forEach((steps) {
               encodedRuta = encodedRuta + '${steps.polyline.points}  ';
               List<LatLng> coordenadasPolilyne =
                   decodeEncodedPolyline(steps.polyline.points);
-              cuentaSteps++;
-              PolylineId idRuta = PolylineId('Step $cuentaSteps');
-              print('Step $cuentaSteps' +
-                  '  Puntos: ${coordenadasPolilyne.length}');
 
               coordenadasPolilyne.forEach(
                 (punto) async {
+                  /*
                   double distancia = await Geolocator().distanceBetween(
                       coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
                       coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
                       coordenadasPolilyne.elementAt(indexPunto).latitude,
                       coordenadasPolilyne.elementAt(indexPunto).longitude);
+
                   print(punto.toString() +
                       '\tDistancia al siguiente punto: $distancia');
+
                   indexPunto++;
+                  */
                 },
               );
-
-              setState(() {
-                colorswitch++;
-                if (colorswitch / 1 > 1) {
-                  colorswitch = 0;
-                }
-                Polyline temppoly = Polyline(
-                  polylineId: idRuta,
-                  color: colores.elementAt(colorswitch),
-                  width: 5,
-                  points: coordenadasPolilyne,
-                  startCap: Cap.roundCap,
-                  endCap: Cap.roundCap,
-                );
-                polylinesRutas.add(temppoly);
-                botonesWidget = Container(
-                  child: FlatButton.icon(
-                    onPressed: () {
-                      iniciarViaje();
-                    },
-                    color: Colors.red,
-                    icon: Icon(Icons.play_arrow),
-                    label: Text('Iniciar'),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15.0),
-                    ),
-                  ),
-                );
-              });
             });
           },
         );
+
         LatLng suroeste =
             LatLng(routes.bounds.southwest.lat, routes.bounds.southwest.lng);
         LatLng noreste =
@@ -520,28 +567,38 @@ class _MapaArtelyState extends State<MapaArtely> {
         LatLngBounds limites =
             LatLngBounds(southwest: suroeste, northeast: noreste);
         _moverRuta(limites, 35.0);
-        print(encodedRuta);
+        // print(encodedRuta);
       },
     );
   }
 
-  void agregaPolyline(List<LatLng> coordenadasPolilyne, LatLngBounds limites,
-      PolylineId idRuta) {
+  void cargaBarraSuperior(BuildContext context) {
     setState(() {
-      Polyline temppoly = Polyline(
-        polylineId: idRuta,
-        color: Colors.blue,
-        points: coordenadasPolilyne,
+      barraSuperior = Container(
+        color: Colors.yellow[100],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[
+            RawMaterialButton(
+              onPressed: () {
+                setState(() {
+                  barraSuperior = _searchBarMaps();
+                });
+              },
+              child: Icon(
+                Icons.search,
+                color: Colors.blue,
+                size: 27.0,
+              ),
+              shape: CircleBorder(),
+              //elevation: 2.0,
+              fillColor: Colors.white,
+              padding: EdgeInsets.all(8.0),
+            ),
+          ],
+        ),
       );
-      polylinesRutas.add(temppoly);
-      _moverRuta(limites, 35.0);
     });
-    print('Num. Rutas = ${polylinesRutas.length}');
-    /*
-                          coordenadasPolilyne.forEach((punto) {
-                            print(punto);
-                          });
-                          */
   }
 
   void _inicializaWidgets() {
@@ -552,64 +609,72 @@ class _MapaArtelyState extends State<MapaArtely> {
 
   void iniciarViaje() {
     setState(() async {
+      enViaje = true;
       DocumentReference databaseReference = Firestore.instance
           .collection('Artely_BD')
-          .document('cdjeoEX41IUInn9mqPon3sD8gUo1')
-          .collection('Viajes')
-          .document();
+          .document('DUZcAAL2ZIr9hvwp1brM');
       DocumentReference actualizador = Firestore.instance
           .collection('Artely_BD')
-          .document('cdjeoEX41IUInn9mqPon3sD8gUo1')
-          .collection('Viajes')
-          .document(databaseReference.documentID);
+          .document('DUZcAAL2ZIr9hvwp1brM');
 
       Position inicio = await Geolocator()
           .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
 
+      //Map<String, dynamic> dataOld = {};
+
       _moverConZoom(inicio, 20.0);
 
       Map<String, dynamic> datosviaje = {
-        "Porigen": new GeoPoint(inicio.latitude, inicio.longitude),
-        "Pdestino": new GeoPoint(marcadores.elementAt(1).position.latitude,
+        "En_viaje": enViaje,
+        "POrigen": new GeoPoint(inicio.latitude, inicio.longitude),
+        "PDestino": new GeoPoint(marcadores.elementAt(1).position.latitude,
             marcadores.elementAt(1).position.longitude),
-        "Encoded polyline": encodedRuta,
-        "Tipo": tipo,
-        "Pactual": new GeoPoint(inicio.latitude, inicio.longitude),
-        "Inicio Viaje": DateTime.now(),
-        "Fin de viaje": null,
+        "Encoded_Polyline": encodedRuta,
+        "Tipo_Viaje": tipo,
+        "PActual": new GeoPoint(inicio.latitude, inicio.longitude),
+        "Inicio_Viaje": DateTime.now(),
+        "Fin_Viaje": null,
       };
 
       try {
-        databaseReference.setData(datosviaje);
-        print(databaseReference.runtimeType);
-        print(databaseReference.documentID);
+        databaseReference.updateData({'Viaje': datosviaje});
+/*
+        databaseReference.get().then((DocumentSnapshot data) {
+          
+        });
+        dataOld = data.data['Viaje'];
+          print(dataOld);
+          */
+        Geolocator geolocator = Geolocator();
+        LocationOptions locationOptions = LocationOptions(
+          accuracy: LocationAccuracy.best,
+          timeInterval: 5000,
+        );
+        positionStream = geolocator.getPositionStream(locationOptions).listen(
+          (Position position) {
+            if (position == null) {
+              print('Error al obtener la ubicación');
+            } else {
+              datosviaje['PActual'] =
+                  new GeoPoint(position.latitude, position.longitude);
+              print(datosviaje);
+
+              print(
+                  'Lat: ${position.latitude} Lng: ${position.longitude} Tiempo: ${position.timestamp}');
+
+              actualizador.updateData(
+                {
+                  'Viaje': datosviaje,
+                },
+              );
+
+              _moverConZoom(position, 20.0);
+            }
+          },
+        );
       } catch (error) {
         print(error);
       }
-
-      Geolocator geolocator = Geolocator();
-      LocationOptions locationOptions = LocationOptions(
-        accuracy: LocationAccuracy.best,
-        timeInterval: 5000,
-      );
-      positionStream = geolocator.getPositionStream(locationOptions).listen(
-        (Position position) {
-          if (position == null) {
-            print('Error al obtener la ubicación');
-          } else {
-            print(
-                'Lat: ${position.latitude} Lng: ${position.longitude} Tiempo: ${position.timestamp}');
-
-            actualizador.updateData(
-              {
-                "Pactual": new GeoPoint(position.latitude, position.longitude),
-              },
-            );
-
-            _moverConZoom(position, 20.0);
-          }
-        },
-      );
     });
   }
 }

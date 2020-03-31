@@ -269,15 +269,26 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   void registraUsuario(FirebaseUser user) {
     try {
       final dbFire = Firestore.instance;
+      Map<String, dynamic> datosViaje = {
+        'En_viaje': false,
+        'Encoded_Polyline': '',
+        'PActual': null,
+        'PDestino': null,
+        'POrigen': null,
+        "Inicio_Viaje": null,
+        "Fin_Viaje": null,
+        'Tipo_Viaje': 1
+      };
 
       Map<String, dynamic> registro = {
         'Nombre': nombreController.text,
-        'Primer Apellido': apellidoController.text,
+        'PApellido': apellidoController.text,
         'Correo': correoController.text,
         'Contrasena': contraController.text,
-        'Telefono': telController.text
+        'Telefono': telController.text,
+        'Viaje': datosViaje
       };
-
+      
       dbFire
           .collection('Artely_BD')
           .document(user.uid)
@@ -287,24 +298,6 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
           mostrarAlerta(context, 'Bienvenido', 'Usuario agregado con exito');
         },
       );
-      final viajesColeccion = Firestore.instance
-          .collection('Artely_BD')
-          .document(user.uid)
-          .collection('Viajes')
-          .document();
-      final cuidadoresColeccion = Firestore.instance
-          .collection('Artely_BD')
-          .document(user.uid)
-          .collection('Cuidadores')
-          .document();
-      final sitiosColeccion = Firestore.instance
-          .collection('Artely_BD')
-          .document(user.uid)
-          .collection('Sitios comunes')
-          .document();
-      viajesColeccion.setData({});
-      cuidadoresColeccion.setData({});
-      sitiosColeccion.setData({});
     } catch (e) {
       print(e.toString());
       print(e.code);

@@ -42,7 +42,7 @@ class BusquedaRoutes {
         this._destino +
         '&mode=' +
         this._mode +
-        '&alternatives' +
+        '&alternatives=' +
         this._alternatives +
         '&units=' +
         this._units +
