@@ -16,6 +16,7 @@ import 'package:prueba_maps/src/Class/PlacesMaps.dart';
 import 'package:prueba_maps/src/Class/Results.dart';
 import 'package:prueba_maps/src/Class/Routes.dart' as Rutas;
 import 'package:prueba_maps/src/Class/RoutesMaps.dart';
+import 'package:prueba_maps/src/Provider/Notificaciones_push.dart';
 
 class MapaArtely extends StatefulWidget {
   @override
@@ -40,6 +41,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     zoom: 5.0,
   );
 
+  Set<MaterialColor> coloresRuta = {Colors.blue, Colors.red, Colors.green};
   PermissionHandler _permissionHandler = PermissionHandler();
   Set<Marker> marcadores = Set();
   Set<Results> lugares = Set();
@@ -60,6 +62,9 @@ class _MapaArtelyState extends State<MapaArtely> {
     super.initState();
     _inicializaWidgets();
     _verificarPermisos();
+
+    final notificaciones = PushNotificationsFirebase();
+    notificaciones.initNotifications('YEYO7612564237');
   }
 
   @override
@@ -235,6 +240,7 @@ class _MapaArtelyState extends State<MapaArtely> {
       polylinesRutas.clear();
       botonesWidget = Container();
       encodedRuta = '';
+      lugares.clear();
       tipo = '';
       enViaje = false;
       /*
@@ -471,7 +477,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     BusquedaRoutes busqueda = BusquedaRoutes();
     int cuentaRutas = 0;
     int indexPunto = 1;
-    Set<MaterialColor> colores = {Colors.blue, Colors.red, Colors.green};
+    int rutaSeleccionada = 1;
 
     String origen =
         '${marcadores.elementAt(0).position.latitude},${marcadores.elementAt(0).position.longitude}';
@@ -508,7 +514,7 @@ class _MapaArtelyState extends State<MapaArtely> {
         setState(() {
           Polyline temppoly = Polyline(
               polylineId: idRuta,
-              color: colores.elementAt(cuentaRutas),
+              color: coloresRuta.elementAt(cuentaRutas),
               width: 5,
               points: coordenadasPolilyne,
               startCap: Cap.roundCap,
@@ -518,16 +524,121 @@ class _MapaArtelyState extends State<MapaArtely> {
               });
           polylinesRutas.add(temppoly);
           botonesWidget = Container(
-            child: FlatButton.icon(
-              onPressed: () {
-                iniciarViaje();
-              },
-              color: Colors.red,
-              icon: Icon(Icons.play_arrow),
-              label: Text('Iniciar'),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15.0),
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  height: 40.0,
+                  child: FlatButton.icon(
+                    onPressed: () {
+                      iniciarViaje();
+                    },
+                    color: coloresRuta.elementAt(rutaSeleccionada - 1),
+                    icon: Icon(Icons.play_arrow),
+                    label: Text(
+                      'Ruta $rutaSeleccionada',
+                      style: TextStyle(
+                        fontSize: 18.0,
+                      ),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(15.0),
+                        bottomLeft: Radius.circular(15.0),
+                      ),
+                    ),
+                  ),
+                ),
+                Container(
+                  height: 40.0,
+                  width: 50.0,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.black45),
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(15.0),
+                      bottomRight: Radius.circular(15.0),
+                    ),
+                  ),
+                  child: PopupMenuButton(
+                    color: Colors.white,
+                    padding: EdgeInsets.all(2.0),
+                    icon: Icon(
+                      Icons.arrow_drop_up,
+                      color: coloresRuta.elementAt(rutaSeleccionada - 1),
+                      size: 35.0,
+                    ),
+                    onSelected: (selecionado) {
+                      setState(() {
+                        rutaSeleccionada = selecionado;
+                        print(rutaSeleccionada);
+                      });
+                    },
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry>[
+                      PopupMenuItem(
+                        child: Text('Ruta 1'),
+                        value: 1,
+                        textStyle: TextStyle(
+                          color: coloresRuta.elementAt(0),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        child: Text('Ruta 2'),
+                        value: 2,
+                        textStyle: TextStyle(
+                          color: coloresRuta.elementAt(1),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        child: Text('Ruta 3'),
+                        value: 3,
+                        textStyle: TextStyle(
+                          color: coloresRuta.elementAt(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                  /*
+                  child: RawMaterialButton(
+                    onPressed: () {},
+                    child: DropdownButton(
+                      icon: Icon(
+                        Icons.arrow_drop_up,
+                        color: Colors.blue,
+                        size: 40.0,
+                      ),
+                      items: <String>['Ruta 1', 'Ruta 2', 'Ruta 3']
+                          .map((String value) {
+                        return new DropdownMenuItem<String>(
+                          value: value,
+                          child: new Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (opcion) {},
+                    ),
+                    /*
+                    child: Icon(
+                      Icons.arrow_drop_up,
+                      color: Colors.blue,
+                      size: 40.0,
+                    ),
+                    */
+                    fillColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(15.0),
+                        bottomRight: Radius.circular(15.0),
+                      ),
+                      side: BorderSide(
+                        color: Colors.black45,
+                        width: 1,
+                        style: BorderStyle.solid,
+                      ),
+                    ),
+                  ),
+                  */
+                ),
+              ],
             ),
           );
           cuentaRutas++;

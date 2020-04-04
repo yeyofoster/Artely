@@ -94,8 +94,15 @@ class Login extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.symmetric(vertical: 20.0),
                     child: InkWell(
-                      child: Text('¿No tienes una cuenta? Registrate aquì!'),
-                      onTap: () => Navigator.pushNamed(context, 'registro'),
+                      child: Text(
+                        '¿No tienes una cuenta? Registrate aquí!',
+                        style: TextStyle(
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline),
+                      ),
+                      onTap: () {
+                        Navigator.pushNamed(context, 'registro');
+                      },
                     ),
                   ),
                   Container(
@@ -127,6 +134,10 @@ class Login extends StatelessWidget {
         AuthResult result = await auth.signInWithEmailAndPassword(
             email: txtCorreo.text, password: txtContra.text);
         FirebaseUser user = result.user;
+        print(result);
+        print(result.user);
+        print(user);
+        print(user.getIdToken());
         if (user != null) {
           Navigator.pushNamed(context, 'mapa');
         } else {
