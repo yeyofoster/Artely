@@ -284,8 +284,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         'Nombre': nombreController.text,
         'PApellido': apellidoController.text,
         'Correo': correoController.text,
-        'Contrasena': contraController.text,
-        'Telefono': telController.text,
+        'Telefono': int.parse(telController.text),
         'Viaje': datosViaje
       };
       

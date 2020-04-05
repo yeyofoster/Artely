@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
 
 class Login extends StatelessWidget {
   final txtCorreo = TextEditingController();
@@ -134,12 +135,11 @@ class Login extends StatelessWidget {
         AuthResult result = await auth.signInWithEmailAndPassword(
             email: txtCorreo.text, password: txtContra.text);
         FirebaseUser user = result.user;
-        print(result);
-        print(result.user);
-        print(user);
-        print(user.getIdToken());
         if (user != null) {
           Navigator.pushNamed(context, 'mapa');
+          PreferenciasUsuario preferencias = new PreferenciasUsuario();
+          preferencias.userID = user.uid;
+          print('Se ha guardado el user ID en las preferencias: ${preferencias.userID}');
         } else {
           print('No se encontró al usuario');
         }

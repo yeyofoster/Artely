@@ -17,6 +17,7 @@ import 'package:prueba_maps/src/Class/Results.dart';
 import 'package:prueba_maps/src/Class/Routes.dart' as Rutas;
 import 'package:prueba_maps/src/Class/RoutesMaps.dart';
 import 'package:prueba_maps/src/Provider/Notificaciones_push.dart';
+import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
 
 class MapaArtely extends StatefulWidget {
   @override
@@ -51,8 +52,9 @@ class _MapaArtelyState extends State<MapaArtely> {
   Widget barraSuperior;
   StreamSubscription<Position> positionStream;
   String encodedRuta = '';
-  String tipo;
+  int tipo;
   bool enViaje = false;
+  PreferenciasUsuario preferencias = new PreferenciasUsuario();
 
   final backgroundtext = 'Buscar';
   //Terminan variables
@@ -64,7 +66,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     _verificarPermisos();
 
     final notificaciones = PushNotificationsFirebase();
-    notificaciones.initNotifications('YEYO7612564237');
+    notificaciones.initNotifications(preferencias.userID);
   }
 
   @override
@@ -99,10 +101,10 @@ class _MapaArtelyState extends State<MapaArtely> {
                 //color: Colors.blue,
                 child: Column(
                   children: <Widget>[
-                    AnimatedSwitcher(
-                      duration: Duration(milliseconds: 700),
-                      child: barraSuperior,
-                    ),
+                    // AnimatedSwitcher(
+                    //   duration: Duration(milliseconds: 700),
+                    //   child: barraSuperior,
+                    // ),
                     _searchBarMaps(),
                     SizedBox(
                       height: 5.0,
@@ -241,7 +243,7 @@ class _MapaArtelyState extends State<MapaArtely> {
       botonesWidget = Container();
       encodedRuta = '';
       lugares.clear();
-      tipo = '';
+      tipo = 0;
       enViaje = false;
       /*
       Firestore.instance
@@ -434,7 +436,7 @@ class _MapaArtelyState extends State<MapaArtely> {
             children: <Widget>[
               FlatButton.icon(
                 onPressed: () {
-                  tipo = '1';
+                  tipo = 1;
                   generarRuta('driving');
                 },
                 color: Colors.blue,
@@ -449,7 +451,7 @@ class _MapaArtelyState extends State<MapaArtely> {
               ),
               FlatButton.icon(
                 onPressed: () {
-                  tipo = '2';
+                  tipo = 2;
                   generarRuta('walking');
                 },
                 color: Colors.green,
@@ -491,39 +493,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     http.Response res = await http.get(busqueda.urlRoutes);
     //debugPrint(res.body);
     RoutesMaps response = RoutesMaps.fromJson(jsonDecode(res.body));
-    response.routes.forEach(
-      (routes) {
-        if (cuentaRutas >= 3) {
-          cuentaRutas = 0;
-        }
-
-        List<LatLng> coordenadasPolilyne =
-            decodeEncodedPolyline(routes.overviewPolyline.points);
-        print('Ruta ${cuentaRutas + 1}');
-        coordenadasPolilyne.forEach((punto) async {
-          double distancia = await Geolocator().distanceBetween(
-              coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
-              coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
-              coordenadasPolilyne.elementAt(indexPunto).latitude,
-              coordenadasPolilyne.elementAt(indexPunto).longitude);
-          print(
-              punto.toString() + '\tDistancia al siguiente punto: $distancia');
-          indexPunto++;
-        });
-        PolylineId idRuta = PolylineId('Ruta ${cuentaRutas + 1}');
-        setState(() {
-          Polyline temppoly = Polyline(
-              polylineId: idRuta,
-              color: coloresRuta.elementAt(cuentaRutas),
-              width: 5,
-              points: coordenadasPolilyne,
-              startCap: Cap.roundCap,
-              endCap: Cap.roundCap,
-              onTap: () {
-                print('Ha seleccionado la ruta: $idRuta');
-              });
-          polylinesRutas.add(temppoly);
-          botonesWidget = Container(
+    botonesWidget = Container(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
@@ -572,6 +542,7 @@ class _MapaArtelyState extends State<MapaArtely> {
                       setState(() {
                         rutaSeleccionada = selecionado;
                         print(rutaSeleccionada);
+                        seleccionaRuta(rutaSeleccionada, response.routes);
                       });
                     },
                     itemBuilder: (BuildContext context) => <PopupMenuEntry>[
@@ -641,6 +612,39 @@ class _MapaArtelyState extends State<MapaArtely> {
               ],
             ),
           );
+          
+    response.routes.forEach(
+      (routes) {
+        if (cuentaRutas >= 3) {
+          cuentaRutas = 0;
+        }
+
+        List<LatLng> coordenadasPolilyne =
+            decodeEncodedPolyline(routes.overviewPolyline.points);
+        print('Ruta ${cuentaRutas + 1}');
+        coordenadasPolilyne.forEach((punto) async {
+          double distancia = await Geolocator().distanceBetween(
+              coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
+              coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
+              coordenadasPolilyne.elementAt(indexPunto).latitude,
+              coordenadasPolilyne.elementAt(indexPunto).longitude);
+          print(
+              punto.toString() + '\tDistancia al siguiente punto: $distancia');
+          indexPunto++;
+        });
+        PolylineId idRuta = PolylineId('Ruta ${cuentaRutas + 1}');
+        setState(() {
+          Polyline temppoly = Polyline(
+              polylineId: idRuta,
+              color: coloresRuta.elementAt(cuentaRutas),
+              width: 5,
+              points: coordenadasPolilyne,
+              startCap: Cap.roundCap,
+              endCap: Cap.roundCap,
+              onTap: () {
+                print('Ha seleccionado la ruta: $idRuta');
+              });
+          polylinesRutas.add(temppoly);
           cuentaRutas++;
         });
 
@@ -723,10 +727,10 @@ class _MapaArtelyState extends State<MapaArtely> {
       enViaje = true;
       DocumentReference databaseReference = Firestore.instance
           .collection('Artely_BD')
-          .document('DUZcAAL2ZIr9hvwp1brM');
+          .document(preferencias.userID);
       DocumentReference actualizador = Firestore.instance
           .collection('Artely_BD')
-          .document('DUZcAAL2ZIr9hvwp1brM');
+          .document(preferencias.userID);
 
       Position inicio = await Geolocator()
           .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
@@ -787,5 +791,9 @@ class _MapaArtelyState extends State<MapaArtely> {
         print(error);
       }
     });
+  }
+
+  void seleccionaRuta(int rutaSeleccionada, List<Rutas.Routes> routes) {
+    
   }
 }

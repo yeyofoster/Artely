@@ -8,7 +8,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     String ruta = '/';
     PreferenciasUsuario preferencias = new PreferenciasUsuario();
-    if (preferencias.token != null) {
+    if (preferencias.userID != '') {
       ruta = 'mapa';
     }
 

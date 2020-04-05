@@ -10,22 +10,17 @@ class PreferenciasUsuario {
 
   PreferenciasUsuario._internal();
 
-  /*
-  String token;
-  String email;
-  */
-  
   SharedPreferences _preferences;
 
   initPreferences() async {
     this._preferences = await SharedPreferences.getInstance();
   }
 
-  set token(String value){
-    this._preferences.setString('token', value);
+  set userID(String value){
+    this._preferences.setString('userID', value);
   }
 
-  get token{
-    return this._preferences.getString('token') ?? '';
+  get userID{
+    return this._preferences.getString('userID') ?? '';
   }
 }

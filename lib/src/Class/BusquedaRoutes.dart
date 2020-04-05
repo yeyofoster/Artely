@@ -2,7 +2,7 @@ class BusquedaRoutes {
   String _apiKey = 'AIzaSyD18jrJ0uzDz-Pt3hg2YLCXjxpEkCAYJ2c';
   String _language = 'es-419';
   String _mode = 'driving'; //walking, bicycling, transit
-  String _alternatives = 'true'; //True = +1 ruta. False = 1 ruta
+  String _alternatives = 'false'; //True = +1 ruta. False = 1 ruta
   String _units = 'metric';
   String _urlAPI = 'https://maps.googleapis.com/maps/api/directions/json?';
   String _origen;
