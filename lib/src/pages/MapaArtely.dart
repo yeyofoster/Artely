@@ -494,125 +494,99 @@ class _MapaArtelyState extends State<MapaArtely> {
     //debugPrint(res.body);
     RoutesMaps response = RoutesMaps.fromJson(jsonDecode(res.body));
     botonesWidget = Container(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  height: 40.0,
-                  child: FlatButton.icon(
-                    onPressed: () {
-                      iniciarViaje();
-                    },
-                    color: coloresRuta.elementAt(rutaSeleccionada - 1),
-                    icon: Icon(Icons.play_arrow),
-                    label: Text(
-                      'Ruta $rutaSeleccionada',
-                      style: TextStyle(
-                        fontSize: 18.0,
-                      ),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(15.0),
-                        bottomLeft: Radius.circular(15.0),
-                      ),
-                    ),
-                  ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Container(
+            height: 40.0,
+            child: FlatButton.icon(
+              onPressed: () {
+                if (rutaSeleccionada == 1) {
+                  seleccionaRuta(rutaSeleccionada, response.routes);
+                }
+                iniciarViaje();
+              },
+              color: coloresRuta.elementAt(rutaSeleccionada - 1),
+              icon: Icon(Icons.play_arrow),
+              label: Text(
+                'Ruta $rutaSeleccionada',
+                style: TextStyle(
+                  fontSize: 18.0,
                 ),
-                Container(
-                  height: 40.0,
-                  width: 50.0,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.black45),
-                    borderRadius: BorderRadius.only(
-                      topRight: Radius.circular(15.0),
-                      bottomRight: Radius.circular(15.0),
-                    ),
-                  ),
-                  child: PopupMenuButton(
-                    color: Colors.white,
-                    padding: EdgeInsets.all(2.0),
-                    icon: Icon(
-                      Icons.arrow_drop_up,
-                      color: coloresRuta.elementAt(rutaSeleccionada - 1),
-                      size: 35.0,
-                    ),
-                    onSelected: (selecionado) {
-                      setState(() {
-                        rutaSeleccionada = selecionado;
-                        print(rutaSeleccionada);
-                        seleccionaRuta(rutaSeleccionada, response.routes);
-                      });
-                    },
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry>[
-                      PopupMenuItem(
-                        child: Text('Ruta 1'),
-                        value: 1,
-                        textStyle: TextStyle(
-                          color: coloresRuta.elementAt(0),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        child: Text('Ruta 2'),
-                        value: 2,
-                        textStyle: TextStyle(
-                          color: coloresRuta.elementAt(1),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        child: Text('Ruta 3'),
-                        value: 3,
-                        textStyle: TextStyle(
-                          color: coloresRuta.elementAt(2),
-                        ),
-                      ),
-                    ],
-                  ),
-                  /*
-                  child: RawMaterialButton(
-                    onPressed: () {},
-                    child: DropdownButton(
-                      icon: Icon(
-                        Icons.arrow_drop_up,
-                        color: Colors.blue,
-                        size: 40.0,
-                      ),
-                      items: <String>['Ruta 1', 'Ruta 2', 'Ruta 3']
-                          .map((String value) {
-                        return new DropdownMenuItem<String>(
-                          value: value,
-                          child: new Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (opcion) {},
-                    ),
-                    /*
-                    child: Icon(
-                      Icons.arrow_drop_up,
-                      color: Colors.blue,
-                      size: 40.0,
-                    ),
-                    */
-                    fillColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        topRight: Radius.circular(15.0),
-                        bottomRight: Radius.circular(15.0),
-                      ),
-                      side: BorderSide(
-                        color: Colors.black45,
-                        width: 1,
-                        style: BorderStyle.solid,
-                      ),
-                    ),
-                  ),
-                  */
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(15.0),
+                  bottomLeft: Radius.circular(15.0),
                 ),
-              ],
+              ),
             ),
-          );
-          
+          ),
+          Container(
+            height: 40.0,
+            width: 50.0,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.black45),
+              borderRadius: BorderRadius.only(
+                topRight: Radius.circular(15.0),
+                bottomRight: Radius.circular(15.0),
+              ),
+            ),
+            child: PopupMenuButton(
+                color: Colors.white,
+                padding: EdgeInsets.all(2.0),
+                icon: Icon(
+                  Icons.arrow_drop_up,
+                  color: coloresRuta.elementAt(rutaSeleccionada - 1),
+                  size: 35.0,
+                ),
+                onSelected: (selecionado) {
+                  setState(() {
+                    rutaSeleccionada = selecionado;
+                  });
+                  print(rutaSeleccionada);
+                  seleccionaRuta(rutaSeleccionada - 1, response.routes);
+                },
+                itemBuilder: (BuildContext context) {
+                  int numRuta = 0;
+                  List<PopupMenuEntry> opciones = <PopupMenuEntry>[];
+                  response.routes.forEach((ruta) {
+                    numRuta++;
+                    opciones.add(
+                      PopupMenuItem(
+                        child: Column(
+                          children: <Widget>[
+                            Text(
+                              'Ruta $numRuta',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: coloresRuta.elementAt(numRuta - 1),
+                              ),
+                            ),
+                            Text(
+                              'Tiempo aproximado: ${ruta.legs.elementAt(0).duration.text}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                        value: numRuta,
+                        // textStyle: TextStyle(
+                        //   color: coloresRuta.elementAt(numRuta - 1),
+                        // ),
+                      ),
+                    );
+                  });
+                  return opciones;
+                }),
+          ),
+        ],
+      ),
+    );
+
     response.routes.forEach(
       (routes) {
         if (cuentaRutas >= 3) {
@@ -652,25 +626,25 @@ class _MapaArtelyState extends State<MapaArtely> {
           (legs) {
             legs.steps.forEach((steps) {
               encodedRuta = encodedRuta + '${steps.polyline.points}  ';
-              List<LatLng> coordenadasPolilyne =
-                  decodeEncodedPolyline(steps.polyline.points);
+              // List<LatLng> coordenadasPolilyne =
+              //     decodeEncodedPolyline(steps.polyline.points);
 
-              coordenadasPolilyne.forEach(
-                (punto) async {
-                  /*
-                  double distancia = await Geolocator().distanceBetween(
-                      coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
-                      coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
-                      coordenadasPolilyne.elementAt(indexPunto).latitude,
-                      coordenadasPolilyne.elementAt(indexPunto).longitude);
+              // coordenadasPolilyne.forEach(
+              //   (punto) async {
+              //     /*
+              //     double distancia = await Geolocator().distanceBetween(
+              //         coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
+              //         coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
+              //         coordenadasPolilyne.elementAt(indexPunto).latitude,
+              //         coordenadasPolilyne.elementAt(indexPunto).longitude);
 
-                  print(punto.toString() +
-                      '\tDistancia al siguiente punto: $distancia');
+              //     print(punto.toString() +
+              //         '\tDistancia al siguiente punto: $distancia');
 
-                  indexPunto++;
-                  */
-                },
-              );
+              //     indexPunto++;
+              //     */
+              //   },
+              // );
             });
           },
         );
@@ -737,10 +711,9 @@ class _MapaArtelyState extends State<MapaArtely> {
 
       //Map<String, dynamic> dataOld = {};
 
-      _moverConZoom(inicio, 20.0);
+      _moverConZoom(inicio, 17.0);
 
       Map<String, dynamic> datosviaje = {
-        "En_viaje": enViaje,
         "POrigen": new GeoPoint(inicio.latitude, inicio.longitude),
         "PDestino": new GeoPoint(marcadores.elementAt(1).position.latitude,
             marcadores.elementAt(1).position.longitude),
@@ -752,14 +725,18 @@ class _MapaArtelyState extends State<MapaArtely> {
       };
 
       try {
-        databaseReference.updateData({'Viaje': datosviaje});
-/*
-        databaseReference.get().then((DocumentSnapshot data) {
-          
+        databaseReference.updateData(
+          {
+            'Viaje': datosviaje,
+          },
+        ).then((valor) {
+          databaseReference.updateData(
+            {
+              'En_viaje': enViaje,
+            },
+          );
         });
-        dataOld = data.data['Viaje'];
-          print(dataOld);
-          */
+
         Geolocator geolocator = Geolocator();
         LocationOptions locationOptions = LocationOptions(
           accuracy: LocationAccuracy.best,
@@ -783,7 +760,7 @@ class _MapaArtelyState extends State<MapaArtely> {
                 },
               );
 
-              _moverConZoom(position, 20.0);
+              _moverConZoom(position, 17.0);
             }
           },
         );
@@ -794,6 +771,39 @@ class _MapaArtelyState extends State<MapaArtely> {
   }
 
   void seleccionaRuta(int rutaSeleccionada, List<Rutas.Routes> routes) {
-    
+    routes.elementAt(rutaSeleccionada);
+
+    List<LatLng> coordenadasPolilyne = decodeEncodedPolyline(
+        routes.elementAt(rutaSeleccionada).overviewPolyline.points);
+
+    PolylineId idRuta = PolylineId('Ruta ${rutaSeleccionada + 1}');
+    polylinesRutas.clear();
+    setState(() {
+      Polyline temppoly = Polyline(
+        polylineId: idRuta,
+        color: coloresRuta.elementAt(rutaSeleccionada),
+        width: 5,
+        points: coordenadasPolilyne,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+      );
+      polylinesRutas.add(temppoly);
+    });
+    routes.elementAt(rutaSeleccionada).legs.forEach((legs) {
+      legs.steps.forEach((steps) {
+        encodedRuta = encodedRuta + '${steps.polyline.points}  ';
+      });
+    });
+
+    LatLng suroeste = LatLng(
+        routes.elementAt(rutaSeleccionada).bounds.southwest.lat,
+        routes.elementAt(rutaSeleccionada).bounds.southwest.lng);
+    LatLng noreste = LatLng(
+        routes.elementAt(rutaSeleccionada).bounds.northeast.lat,
+        routes.elementAt(rutaSeleccionada).bounds.northeast.lng);
+    LatLngBounds limites =
+        LatLngBounds(southwest: suroeste, northeast: noreste);
+    _moverRuta(limites, 35.0);
+    // print(encodedRuta);
   }
 }

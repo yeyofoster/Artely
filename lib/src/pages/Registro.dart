@@ -270,7 +270,6 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     try {
       final dbFire = Firestore.instance;
       Map<String, dynamic> datosViaje = {
-        'En_viaje': false,
         'Encoded_Polyline': '',
         'PActual': null,
         'PDestino': null,
@@ -281,6 +280,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       };
 
       Map<String, dynamic> registro = {
+        'En_viaje': false,
         'Nombre': nombreController.text,
         'PApellido': apellidoController.text,
         'Correo': correoController.text,
