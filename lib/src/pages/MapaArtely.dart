@@ -245,27 +245,16 @@ class _MapaArtelyState extends State<MapaArtely> {
       lugares.clear();
       tipo = 0;
       enViaje = false;
-      /*
+
       Firestore.instance
           .collection('Artely_BD')
-          .document('mFlnuFQOzcPl59aszt7ez1YipmY2')
+          .document(preferencias.userID)
           .updateData(
         {
-          'Viaje': {
-            'En_viaje': false,
-            /*
-            'Encoded polyline': '',
-            'PActual': null,
-            'PDestino': null,
-            'Porigen': null,
-            "Inicio Viaje": null,
-            "Fin de viaje": null,
-            'Tipo_Viaje': 1
-            */
-          },
+          'En_viaje': enViaje,
         },
       );
-      */
+
       if (positionStream != null) {
         positionStream.pause();
         positionStream.cancel();
@@ -477,8 +466,7 @@ class _MapaArtelyState extends State<MapaArtely> {
 
   Future<void> generarRuta(String modo) async {
     BusquedaRoutes busqueda = BusquedaRoutes();
-    int cuentaRutas = 0;
-    int indexPunto = 1;
+    // int indexPunto = 1;
     int rutaSeleccionada = 1;
 
     String origen =
@@ -502,7 +490,7 @@ class _MapaArtelyState extends State<MapaArtely> {
             child: FlatButton.icon(
               onPressed: () {
                 if (rutaSeleccionada == 1) {
-                  seleccionaRuta(rutaSeleccionada, response.routes);
+                  seleccionaRuta(rutaSeleccionada - 1, response.routes);
                 }
                 iniciarViaje();
               },
@@ -579,6 +567,9 @@ class _MapaArtelyState extends State<MapaArtely> {
                         // ),
                       ),
                     );
+                    if (numRuta < response.routes.length) {
+                      opciones.add(PopupMenuDivider());
+                    }
                   });
                   return opciones;
                 }),
@@ -589,28 +580,24 @@ class _MapaArtelyState extends State<MapaArtely> {
 
     response.routes.forEach(
       (routes) {
-        if (cuentaRutas >= 3) {
-          cuentaRutas = 0;
-        }
-
         List<LatLng> coordenadasPolilyne =
             decodeEncodedPolyline(routes.overviewPolyline.points);
-        print('Ruta ${cuentaRutas + 1}');
-        coordenadasPolilyne.forEach((punto) async {
-          double distancia = await Geolocator().distanceBetween(
-              coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
-              coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
-              coordenadasPolilyne.elementAt(indexPunto).latitude,
-              coordenadasPolilyne.elementAt(indexPunto).longitude);
-          print(
-              punto.toString() + '\tDistancia al siguiente punto: $distancia');
-          indexPunto++;
-        });
-        PolylineId idRuta = PolylineId('Ruta ${cuentaRutas + 1}');
+        // print('Ruta $rutaSeleccionada');
+        // coordenadasPolilyne.forEach((punto) async {
+        //   double distancia = await Geolocator().distanceBetween(
+        //       coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
+        //       coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
+        //       coordenadasPolilyne.elementAt(indexPunto).latitude,
+        //       coordenadasPolilyne.elementAt(indexPunto).longitude);
+        //   print(
+        //       punto.toString() + '\tDistancia al siguiente punto: $distancia');
+        //   indexPunto++;
+        // });
+        PolylineId idRuta = PolylineId('Ruta $rutaSeleccionada');
         setState(() {
           Polyline temppoly = Polyline(
               polylineId: idRuta,
-              color: coloresRuta.elementAt(cuentaRutas),
+              color: coloresRuta.elementAt(rutaSeleccionada - 1),
               width: 5,
               points: coordenadasPolilyne,
               startCap: Cap.roundCap,
@@ -619,7 +606,7 @@ class _MapaArtelyState extends State<MapaArtely> {
                 print('Ha seleccionado la ruta: $idRuta');
               });
           polylinesRutas.add(temppoly);
-          cuentaRutas++;
+          rutaSeleccionada++;
         });
 
         routes.legs.forEach(
@@ -771,8 +758,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   }
 
   void seleccionaRuta(int rutaSeleccionada, List<Rutas.Routes> routes) {
-    routes.elementAt(rutaSeleccionada);
-
+    encodedRuta = '';
     List<LatLng> coordenadasPolilyne = decodeEncodedPolyline(
         routes.elementAt(rutaSeleccionada).overviewPolyline.points);
 
