@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.artely_app">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.artely_app">
 
     <!-- io.flutter.app.FlutterApplication is an android.app.Application that
          calls FlutterMain.startInitialization(this); in its onCreate method.
@@ -10,26 +9,23 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
-    <application
-        android:name="io.flutter.app.FlutterApplication"
-        android:label="Artely"
-        android:icon="@mipmap/ic_launcher">
-        <meta-data android:name="com.google.android.geo.API_KEY"
-               android:value="AIzaSyD18jrJ0uzDz-Pt3hg2YLCXjxpEkCAYJ2c"/>
-        <activity
-            android:name=".MainActivity"
-            android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
+    <application android:name="io.flutter.app.FlutterApplication" android:label="Artely" android:icon="@mipmap/ic_launcher">
+        <meta-data android:name="com.google.android.geo.API_KEY" android:value="AIzaSyD18jrJ0uzDz-Pt3hg2YLCXjxpEkCAYJ2c"/>
+        <activity android:name=".MainActivity" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
             <!-- This keeps the window background of the activity showing
                  until Flutter renders its first frame. It can be removed if
                  there is no splash screen (such as the default splash screen
                  defined in @style/LaunchTheme). -->
-            <meta-data
-                android:name="io.flutter.app.android.SplashScreenUntilFirstFrame"
-                android:value="true" />
+            <!-- Set custom default icon. This is used when no icon is set for incoming notification messages. -->
+            <meta-data android:name="com.google.firebase.messaging.default_notification_icon"
+                       android:resource="@mipmap/ic_stat_logo_artely_sin_fondo" />
+            <!-- Set color used with incoming notification messages. This is used when no color is set for the incoming notification message.  -->
+            <meta-data android:name="com.google.firebase.messaging.default_notification_color" 
+                       android:resource="@color/colorNotificaciones" />
+
+            <meta-data android:name="io.flutter.app.android.SplashScreenUntilFirstFrame"
+                       android:value="true" />
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

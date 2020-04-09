@@ -244,17 +244,19 @@ class _MapaArtelyState extends State<MapaArtely> {
       encodedRuta = '';
       lugares.clear();
       tipo = 0;
-      enViaje = false;
+      if (enViaje) {
+        print('El usuario estaba en viaje');
+        enViaje = false;
 
-      Firestore.instance
-          .collection('Artely_BD')
-          .document(preferencias.userID)
-          .updateData(
-        {
-          'En_viaje': enViaje,
-        },
-      );
-
+        Firestore.instance
+            .collection('Artely_BD')
+            .document(preferencias.userID)
+            .updateData(
+          {
+            'En_viaje': enViaje,
+          },
+        );
+      }
       if (positionStream != null) {
         positionStream.pause();
         positionStream.cancel();
@@ -544,6 +546,8 @@ class _MapaArtelyState extends State<MapaArtely> {
                     opciones.add(
                       PopupMenuItem(
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             Text(
                               'Ruta $numRuta',
@@ -551,6 +555,7 @@ class _MapaArtelyState extends State<MapaArtely> {
                                 fontWeight: FontWeight.bold,
                                 color: coloresRuta.elementAt(numRuta - 1),
                               ),
+                              textAlign: TextAlign.start,
                             ),
                             Text(
                               'Tiempo aproximado: ${ruta.legs.elementAt(0).duration.text}',
@@ -695,8 +700,6 @@ class _MapaArtelyState extends State<MapaArtely> {
 
       Position inicio = await Geolocator()
           .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-
-      //Map<String, dynamic> dataOld = {};
 
       _moverConZoom(inicio, 17.0);
 

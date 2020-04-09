@@ -2,10 +2,24 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
 
-class Login extends StatelessWidget {
-  final txtCorreo = TextEditingController();
-  final txtContra = TextEditingController();
+class Login extends StatefulWidget {
+  @override
+  _LoginState createState() => _LoginState();
+}
+
+class _LoginState extends State<Login> {
+  final TextEditingController correoController = TextEditingController();
+  final TextEditingController contraController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool invisible;
+  Widget iconVisible;
+
+  @override
+  void initState() {
+    super.initState();
+    invisible = true;
+    iconVisible = Icon(Icons.visibility_off, color: Colors.blueGrey);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,58 +54,11 @@ class Login extends StatelessWidget {
                     color: Colors.blue,
                     size: 250.0,
                   ),
-                  TextFormField(
-                    validator: (input) {
-                      if (input.isEmpty) {
-                        return 'Falta correo';
-                      } else if (input.isNotEmpty) {
-                        RegExp correoRegExp = RegExp(
-                            r'^([a-zA-Z0-9_\-\.]+)@[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+$');
-                        if (correoRegExp.hasMatch(input)) {
-                          return null;
-                        }
-                      }
-                      return 'El correo no tiene un formato valido';
-                    },
-                    controller: txtCorreo,
-                    decoration: InputDecoration(
-                      hintText: 'Correo/Telefono',
-                      suffixIcon: Icon(Icons.mail_outline),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15.0),
-                      ),
-                    ),
-                  ),
+                  _txtCorreo(),
                   SizedBox(
                     height: 25.0,
                   ),
-                  TextFormField(
-                    validator: (input) {
-                      if (input.isEmpty) {
-                        return 'Falta contraseña';
-                      } else if (input.isNotEmpty) {
-                        if (input.length <= 8) {
-                          return 'La contraseña debe ser mayor a 8 caracteres';
-                        } else {
-                          RegExp contraRegExp = RegExp(
-                              r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])');
-                          if (contraRegExp.hasMatch(input)) {
-                            return null;
-                          }
-                        }
-                      }
-                      return 'Se necesita al menos un caracter especial, mayuscula, numero y minuscula en la contraseña';
-                    },
-                    controller: txtContra,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      hintText: 'Contraseña',
-                      suffixIcon: Icon(Icons.lock),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15.0),
-                      ),
-                    ),
-                  ),
+                  _txtContrasenia(),
                   Container(
                     padding: EdgeInsets.symmetric(vertical: 20.0),
                     child: InkWell(
@@ -128,18 +95,104 @@ class Login extends StatelessWidget {
     );
   }
 
+  Widget _txtContrasenia() {
+    return TextFormField(
+      controller: contraController,
+      obscureText: invisible,
+      validator: (input) {
+        if (input.isEmpty) {
+          return 'Falta contraseña';
+        } else if (input.isNotEmpty) {
+          if (input.length <= 8) {
+            return 'La contraseña debe ser mayor a 8 caracteres';
+          } else {
+            RegExp contraRegExp = RegExp(
+                r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])');
+            if (contraRegExp.hasMatch(input)) {
+              return null;
+            }
+          }
+        }
+        return 'Se necesita al menos un caracter especial, \nmayuscula, numero y minuscula en la contraseña';
+      },
+      decoration: InputDecoration(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20.0),
+        ),
+        hintText: 'Contraseña',
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 15.0,
+          vertical: 20.0,
+        ),
+        suffixIcon: IconButton(
+          icon: iconVisible,
+          onPressed: () {
+            if (invisible) {
+              setState(() {
+                invisible = false;
+                iconVisible = Icon(Icons.visibility, color: Colors.blue);
+                print('Ahora soy visible: $invisible');
+              });
+            } else {
+              setState(() {
+                invisible = true;
+                iconVisible =
+                    Icon(Icons.visibility_off, color: Colors.blueGrey);
+                print('Ahora soy invisible: $invisible');
+              });
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _txtCorreo() {
+    return TextFormField(
+      controller: correoController,
+      keyboardType: TextInputType.emailAddress,
+      validator: (input) {
+        if (input.isEmpty) {
+          return 'Falta correo';
+        } else if (input.isNotEmpty) {
+          RegExp correoRegExp =
+              RegExp(r'^([a-zA-Z0-9_\-\.]+)@[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+$');
+          if (correoRegExp.hasMatch(input)) {
+            return null;
+          }
+        }
+        return 'El correo no tiene un formato valido';
+      },
+      decoration: InputDecoration(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20.0),
+        ),
+        hintText: 'Correo electrónico',
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 15.0,
+          vertical: 20.0,
+        ),
+        suffixIcon: Icon(
+          Icons.email,
+          color: Colors.blue,
+        ),
+      ),
+    );
+  }
+
   Future<void> validaLogin(BuildContext context) async {
     if (_formKey.currentState.validate()) {
       try {
         FirebaseAuth auth = FirebaseAuth.instance;
         AuthResult result = await auth.signInWithEmailAndPassword(
-            email: txtCorreo.text, password: txtContra.text);
+            email: correoController.text, password: contraController.text);
         FirebaseUser user = result.user;
         if (user != null) {
           Navigator.pushNamed(context, 'mapa');
           PreferenciasUsuario preferencias = new PreferenciasUsuario();
           preferencias.userID = user.uid;
-          print('Se ha guardado el user ID en las preferencias: ${preferencias.userID}');
+          print(
+              'Se ha guardado el user ID en las preferencias: ${preferencias.userID}');
         } else {
           print('No se encontró al usuario');
         }

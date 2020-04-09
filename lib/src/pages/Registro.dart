@@ -15,7 +15,16 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   TextEditingController correoController = TextEditingController();
   TextEditingController contraController = TextEditingController();
   TextEditingController telController = TextEditingController();
+  bool invisible;
+  Widget iconVisible;
   //String nombre, ap, correo, contrasenia, tel;
+
+  @override
+  void initState() {
+    super.initState();
+    invisible = true;
+    iconVisible = Icon(Icons.visibility_off, color: Colors.blueGrey);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +89,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       controller: nombreController,
       validator: (input) {
         if (input.isEmpty) {
-          return 'Falta este campo';
+          return 'Falta ingresar un nombre';
         }
         return null;
       },
@@ -108,7 +117,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       textCapitalization: TextCapitalization.words,
       validator: (input) {
         if (input.isEmpty) {
-          return 'Falta este campo';
+          return 'Falta ingresar apellido';
         }
         return null;
       },
@@ -132,11 +141,18 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   Widget _txtCorreo() {
     return TextFormField(
       controller: correoController,
+      keyboardType: TextInputType.emailAddress,
       validator: (input) {
         if (input.isEmpty) {
-          return 'Falta este campo';
+          return 'Falta correo';
+        } else if (input.isNotEmpty) {
+          RegExp correoRegExp =
+              RegExp(r'^([a-zA-Z0-9_\-\.]+)@[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+$');
+          if (correoRegExp.hasMatch(input)) {
+            return null;
+          }
         }
-        return null;
+        return 'El correo no tiene un formato valido';
       },
       decoration: InputDecoration(
         border: OutlineInputBorder(
@@ -164,6 +180,8 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         }
         return null;
       },
+      keyboardType: TextInputType.phone,
+      
       decoration: InputDecoration(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20.0),
@@ -184,12 +202,22 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   Widget _txtContrasenia() {
     return TextFormField(
       controller: contraController,
-      obscureText: true,
+      obscureText: invisible,
       validator: (input) {
         if (input.isEmpty) {
-          return 'Falta este campo';
+          return 'Falta contraseña';
+        } else if (input.isNotEmpty) {
+          if (input.length <= 8) {
+            return 'La contraseña debe ser mayor a 8 caracteres';
+          } else {
+            RegExp contraRegExp = RegExp(
+                r'^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])');
+            if (contraRegExp.hasMatch(input)) {
+              return null;
+            }
+          }
         }
-        return null;
+        return 'Se necesita al menos un caracter especial, \nmayuscula, numero y minuscula en la contraseña';
       },
       decoration: InputDecoration(
         border: OutlineInputBorder(
@@ -200,9 +228,24 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
           horizontal: 15.0,
           vertical: 20.0,
         ),
-        suffixIcon: Icon(
-          Icons.lock,
-          color: Colors.blue,
+        suffixIcon: IconButton(
+          icon: iconVisible,
+          onPressed: () {
+            if (invisible) {
+              setState(() {
+                invisible = false;
+                iconVisible = Icon(Icons.visibility, color: Colors.blue);
+                print('Ahora soy visible: $invisible');
+              });
+            } else {
+              setState(() {
+                invisible = true;
+                iconVisible =
+                    Icon(Icons.visibility_off, color: Colors.blueGrey);
+                print('Ahora soy invisible: $invisible');
+              });
+            }
+          },
         ),
       ),
     );
@@ -227,18 +270,6 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     if (_formKey.currentState.validate()) {
       autenticaUsuario(context);
       Navigator.of(context).pushNamed('/');
-      /*
-      var auth = autenticaUsuario(
-              context, correoController.text, contraController.text)
-          .then(
-        (valido) {
-          if (valido) {
-            registraUsuario();
-            Navigator.of(context).pushNamed('/');
-          }
-        },
-      );
-      */
     }
   }
 
@@ -287,7 +318,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         'Telefono': int.parse(telController.text),
         'Viaje': datosViaje
       };
-      
+
       dbFire
           .collection('Artely_BD')
           .document(user.uid)
@@ -337,51 +368,3 @@ void mostrarAlerta(BuildContext context, String titulo, String mensaje) {
     },
   );
 }
-/*
-  Widget _botonConsultaFormulario() {
-    return Container(
-      width: MediaQuery.of(context).size.width * 0.90,
-      child: FlatButton(
-        color: Colors.blue[300],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadiusDirectional.circular(20.0),
-        ),
-        onPressed: _consultarDatos,
-        child: Text('Consultar'),
-      ),
-    );
-  }
-
-  void _consultarDatos() {
-    final dbFire = Firestore.instance;
-    dbFire
-        .collection('Artely_BD')
-        .where('Correo', isEqualTo: correoController.text)
-        .getDocuments()
-        .then(
-      (query) {
-        if (query.documents.isNotEmpty) {
-          String id = query.documents.first.documentID;
-          print(id);
-          final user =
-              Firestore.instance.collection('Artely_BD/$id/Cuidadores');
-          user.getDocuments().then((cuidad) {
-            cuidad.documents.forEach(
-              (doccuidad) {
-                print(doccuidad.data);
-              },
-            );
-          });
-          final sitios =
-              Firestore.instance.collection('Artely_BD/$id/Sitios Comunes');
-          sitios.getDocuments().then((sitios) {
-            print(sitios.documents.first.data);
-          });
-          print(query.documents.first.data);
-        } else if (query.documents.isEmpty) {
-          print('No encontre nada');
-        }
-      },
-    );
-  }
-  */
