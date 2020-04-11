@@ -32,6 +32,7 @@ flutter_icons:
   ios: true
   android: true
   image_path: "assets/logo_artely.png"
+  adaptive_icon_foreground: "assets/logo_artely.png"
 
 flutter:
 

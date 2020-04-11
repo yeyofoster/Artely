@@ -20,11 +20,14 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: [
-        const Locale('es', 'ES'), 
+        const Locale('es', 'ES'),
       ],
       debugShowCheckedModeBanner: false,
       title: 'Artely',
       routes: getApplicationRoutes(),
+      theme: ThemeData(
+        primaryColor: Colors.cyan,
+      ),
       initialRoute: ruta,
       onGenerateRoute: (RouteSettings settings) {
         print('La ruta ${settings.name} no fue encontrada.');

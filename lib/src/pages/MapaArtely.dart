@@ -34,14 +34,15 @@ class _MapaArtelyState extends State<MapaArtely> {
     fontSize: 17.0,
   );
 
+  //Variables de Google Maps
   Completer<GoogleMapController> _controller = Completer();
   GoogleMapController _mapController;
-
-  CameraPosition _mexicoposition = CameraPosition(
+  CameraPosition _mexicoPosition = CameraPosition(
     target: LatLng(23.6345005, -102.5527878),
     zoom: 5.0,
   );
 
+  //Widgets y variables globales
   Set<MaterialColor> coloresRuta = {Colors.blue, Colors.red, Colors.green};
   PermissionHandler _permissionHandler = PermissionHandler();
   Set<Marker> marcadores = Set();
@@ -57,6 +58,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   PreferenciasUsuario preferencias = new PreferenciasUsuario();
 
   final backgroundtext = 'Buscar';
+
   //Terminan variables
 
   @override
@@ -72,9 +74,8 @@ class _MapaArtelyState extends State<MapaArtely> {
   @override
   Widget build(BuildContext context) {
     //Variables de ancho y largo de la pantalla del dispositivo
-    final _maxwidth = MediaQuery.of(context).size.width;
-    final _maxheight = MediaQuery.of(context).size.height;
-    cargaBarraSuperior(context);
+    final double _maxwidth = MediaQuery.of(context).size.width;
+    final double _maxheight = MediaQuery.of(context).size.height;
 
     return SafeArea(
       child: Scaffold(
@@ -97,21 +98,27 @@ class _MapaArtelyState extends State<MapaArtely> {
               width: _maxwidth * 0.93,
               top: _maxheight * 0.05,
               left: _maxwidth * 0.03,
-              child: Container(
-                //color: Colors.blue,
-                child: Column(
-                  children: <Widget>[
-                    // AnimatedSwitcher(
-                    //   duration: Duration(milliseconds: 700),
-                    //   child: barraSuperior,
-                    // ),
-                    _searchBarMaps(),
-                    SizedBox(
-                      height: 5.0,
-                    ),
-                    _listaResult(),
-                  ],
-                ),
+              child: Column(
+                children: <Widget>[
+                  AnimatedSwitcher(
+                    duration: Duration(milliseconds: 400),
+                    child: barraSuperior,
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
+                      return SlideTransition(
+                        position: Tween<Offset>(
+                          begin: Offset(0.5, 0.0),
+                          end: Offset(0.0, 0.0),
+                        ).animate(animation),
+                        child: child,
+                      );
+                    },
+                  ),
+                  SizedBox(
+                    height: 5.0,
+                  ),
+                  _listaResult(),
+                ],
               ),
             ),
             Positioned(
@@ -216,7 +223,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   void _ubicarme() async {
     Position position = await Geolocator()
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
-    _mover(position);
+    _moverConZoom(position, 16.0);
 
     setState(() {
       String pos = 'Lat: ' +
@@ -268,7 +275,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   GoogleMap _creaMapa() {
     return GoogleMap(
       mapType: MapType.normal,
-      initialCameraPosition: _mexicoposition,
+      initialCameraPosition: _mexicoPosition,
       myLocationEnabled: true,
       myLocationButtonEnabled: false,
       zoomGesturesEnabled: true,
@@ -276,18 +283,17 @@ class _MapaArtelyState extends State<MapaArtely> {
       polylines: polylinesRutas,
       mapToolbarEnabled:
           false, //Quita los botones de naavegación cuando se presiona un marcador.
-      onMapCreated: (GoogleMapController controller) {
+      onMapCreated: (GoogleMapController controller) async {
+        Position p = await Geolocator()
+            .getCurrentPosition(desiredAccuracy: LocationAccuracy.medium);
         _controller.complete(controller);
         _mapController = controller;
+        _mapController.moveCamera(CameraUpdate.newLatLngZoom(
+          LatLng(p.latitude, p.longitude),
+          15.0,
+        ));
       },
     );
-  }
-
-  //Método que mueve la camara del mapa con un zoom dado.
-  void _mover(Position position) {
-    final ubicacion = CameraUpdate.newLatLngZoom(
-        LatLng(position.latitude, position.longitude), 16.0);
-    _mapController.animateCamera(ubicacion);
   }
 
   //Método que mueve la camara del mapa con un zoom dado.
@@ -307,28 +313,42 @@ class _MapaArtelyState extends State<MapaArtely> {
   }
 
   //Método que regresa el widget de la barra de busqueda
-  Widget _searchBarMaps() {
-    return TextField(
-      onSubmitted: _buscarLugar,
-      onChanged: _prediccionLugar,
-      decoration: InputDecoration(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15.0),
+  void cargarBarraBusqueda() {
+    _ubicarme();
+    setState(() {
+      barraSuperior = WillPopScope(
+        onWillPop: () {
+          setState(() {
+            cargaBarraSuperior();
+            marcadores.clear();
+          });
+          return null;
+        },
+        child: TextField(
+          autocorrect: true,
+          autofocus: true,
+          onSubmitted: _buscarLugar,
+          onChanged: _prediccionLugar,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15.0),
+            ),
+            hintText: backgroundtext,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 15.0,
+              vertical: 18.0,
+            ),
+            fillColor: Colors.grey[100],
+            filled: true,
+            suffixIcon: Icon(
+              Icons.search,
+              color: Colors.cyan,
+              size: 27.0,
+            ),
+          ),
         ),
-        hintText: backgroundtext,
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: 15.0,
-          vertical: 20.0,
-        ),
-        fillColor: Colors.grey[100],
-        filled: true,
-        suffixIcon: Icon(
-          Icons.search,
-          color: Colors.blue,
-          size: 30.0,
-        ),
-      ),
-    );
+      );
+    });
   }
 
   //Método que busca el lugar ingresado en la barra de busqueda.
@@ -653,29 +673,47 @@ class _MapaArtelyState extends State<MapaArtely> {
     );
   }
 
-  void cargaBarraSuperior(BuildContext context) {
+  void cargaBarraSuperior() {
     setState(() {
       barraSuperior = Container(
-        color: Colors.yellow[100],
+        padding: EdgeInsets.symmetric(
+          vertical: 4.0,
+          horizontal: 0.0,
+        ),
+        key: ValueKey('Barra Superior'),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10.0),
+          color: Colors.white54,
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            RawMaterialButton(
-              onPressed: () {
-                setState(() {
-                  barraSuperior = _searchBarMaps();
-                });
-              },
-              child: Icon(
-                Icons.search,
-                color: Colors.blue,
-                size: 27.0,
+            _botonExtra(),
+            Flexible(
+              child: FractionallySizedBox(
+                widthFactor: 0.80,
               ),
-              shape: CircleBorder(),
-              //elevation: 2.0,
-              fillColor: Colors.white,
-              padding: EdgeInsets.all(8.0),
             ),
+            _botonProtegidos(),
+            Flexible(
+              child: FractionallySizedBox(
+                widthFactor: 0.80,
+              ),
+            ),
+            _botonCuidadores(),
+            Flexible(
+              child: FractionallySizedBox(
+                widthFactor: 0.80,
+              ),
+            ),
+            _botonViajes(),
+            Flexible(
+              child: FractionallySizedBox(
+                widthFactor: 0.80,
+              ),
+            ),
+            _botonBusqueda(),
           ],
         ),
       );
@@ -685,6 +723,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   void _inicializaWidgets() {
     setState(() {
       botonesWidget = Container();
+      cargaBarraSuperior();
     });
   }
 
@@ -794,5 +833,113 @@ class _MapaArtelyState extends State<MapaArtely> {
         LatLngBounds(southwest: suroeste, northeast: noreste);
     _moverRuta(limites, 35.0);
     // print(encodedRuta);
+  }
+
+  //Carga el botón de busqueda a la barra superior
+  Widget _botonBusqueda() {
+    return Tooltip(
+      message: 'Buscar',
+      child: MaterialButton(
+        minWidth: 10.0,
+        elevation: 5.0,
+        color: Colors.white,
+        shape: CircleBorder(),
+        padding: EdgeInsets.all(10.0),
+        child: Icon(
+          Icons.search,
+          color: Colors.cyan,
+          size: 27.0,
+        ),
+        onPressed: cargarBarraBusqueda,
+      ),
+    );
+  }
+
+  //Carga el botón de cuidadores a la barra superior
+  Widget _botonCuidadores() {
+    return Tooltip(
+      message: 'Mis Cuidadores',
+      child: MaterialButton(
+        elevation: 5.0,
+        minWidth: 10.0,
+        color: Colors.white,
+        shape: CircleBorder(),
+        padding: EdgeInsets.all(10.0),
+        child: Icon(
+          Icons.people,
+          color: Colors.cyan,
+          size: 27.0,
+        ),
+        onPressed: () {
+          Navigator.of(context).pushNamed('cuidadores');
+        },
+      ),
+    );
+  }
+
+  //Carga el botón de viajes a la barra superior
+  Widget _botonViajes() {
+    return Tooltip(
+      message: 'Mis viajes',
+      child: MaterialButton(
+        elevation: 5.0,
+        minWidth: 10.0,
+        color: Colors.white,
+        shape: CircleBorder(),
+        padding: EdgeInsets.all(10.0),
+        child: Icon(
+          Icons.directions_car,
+          color: Colors.cyan,
+          size: 27.0,
+        ),
+        onPressed: () {
+          Navigator.of(context).pushNamed('viajes');
+        },
+      ),
+    );
+  }
+
+  //Carga el botón de protegiddos a la barra superior
+  Widget _botonProtegidos() {
+    return Tooltip(
+      message: 'Mis protegidos',
+      child: MaterialButton(
+        elevation: 5.0,
+        minWidth: 10.0,
+        color: Colors.white,
+        shape: CircleBorder(),
+        padding: EdgeInsets.all(10.0),
+        child: Icon(
+          Icons.security,
+          color: Colors.cyan,
+          size: 27.0,
+        ),
+        onPressed: () {
+          Navigator.of(context).pushNamed('protegidos');
+        },
+      ),
+    );
+  }
+
+  //Carga el botón de extra a la barra superior
+  Widget _botonExtra() {
+    return Tooltip(
+      message: 'Mis extra',
+      child: MaterialButton(
+        elevation: 5.0,
+        minWidth: 10.0,
+        color: Colors.white,
+        shape: CircleBorder(),
+        padding: EdgeInsets.all(10.0),
+        child: Icon(
+          Icons.settings,
+          color: Colors.cyan,
+          size: 27.0,
+        ),
+        onPressed: () {
+          Navigator.of(context).pushNamed('protegidos');
+        },
+      ),
+    );
   }
 }
