@@ -27,6 +27,9 @@ class MyApp extends StatelessWidget {
       routes: getApplicationRoutes(),
       theme: ThemeData(
         primaryColor: Colors.cyan,
+        textTheme: TextTheme(
+          body1: TextStyle(fontFamily: 'Roboto'),
+        ),
       ),
       initialRoute: ruta,
       onGenerateRoute: (RouteSettings settings) {

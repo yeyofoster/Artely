@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
-class PantallaProtegidos extends StatefulWidget {
+class PantallaRutas extends StatefulWidget {
   @override
-  _PantallaProtegidosState createState() => _PantallaProtegidosState();
+  _PantallaRutasState createState() => _PantallaRutasState();
 }
 
-class _PantallaProtegidosState extends State<PantallaProtegidos> {
+class _PantallaRutasState extends State<PantallaRutas> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Mis protegidos'),
+          title: Text('Mis rutas'),
         ),
         body: Container(),
       ),

@@ -47,34 +47,32 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
             child: Container(
               padding: EdgeInsets.only(top: 70.0, left: 20.0, right: 20.0),
               child: Container(
-                child: ListView(
-                  children: <Widget>[
-                    Column(
-                      children: <Widget>[
-                        _txtNombre(),
-                        SizedBox(
-                          height: 25.0,
-                        ),
-                        _txApellido(),
-                        SizedBox(
-                          height: 25.0,
-                        ),
-                        _txtCorreo(),
-                        SizedBox(
-                          height: 25.0,
-                        ),
-                        _txtTelefono(),
-                        SizedBox(
-                          height: 25.0,
-                        ),
-                        _txtContrasenia(),
-                        SizedBox(
-                          height: 50.0,
-                        ),
-                        _botonFormulario(),
-                      ],
-                    ),
-                  ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: <Widget>[
+                      _txtNombre(),
+                      SizedBox(
+                        height: 25.0,
+                      ),
+                      _txApellido(),
+                      SizedBox(
+                        height: 25.0,
+                      ),
+                      _txtCorreo(),
+                      SizedBox(
+                        height: 25.0,
+                      ),
+                      _txtTelefono(),
+                      SizedBox(
+                        height: 25.0,
+                      ),
+                      _txtContrasenia(),
+                      SizedBox(
+                        height: 50.0,
+                      ),
+                      _botonFormulario(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -181,7 +179,6 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         return null;
       },
       keyboardType: TextInputType.phone,
-      
       decoration: InputDecoration(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20.0),

@@ -101,13 +101,13 @@ class _MapaArtelyState extends State<MapaArtely> {
               child: Column(
                 children: <Widget>[
                   AnimatedSwitcher(
-                    duration: Duration(milliseconds: 400),
+                    duration: Duration(milliseconds: 300),
                     child: barraSuperior,
                     transitionBuilder:
                         (Widget child, Animation<double> animation) {
                       return SlideTransition(
                         position: Tween<Offset>(
-                          begin: Offset(0.5, 0.0),
+                          begin: Offset(5.0, 0.0),
                           end: Offset(0.0, 0.0),
                         ).animate(animation),
                         child: child,
@@ -682,20 +682,20 @@ class _MapaArtelyState extends State<MapaArtely> {
         ),
         key: ValueKey('Barra Superior'),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10.0),
-          color: Colors.white54,
+          borderRadius: BorderRadius.circular(25.0),
+          color: Colors.white70,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            _botonExtra(),
+            _botonBusqueda(),
             Flexible(
               child: FractionallySizedBox(
                 widthFactor: 0.80,
               ),
             ),
-            _botonProtegidos(),
+            _botonRutas(),
             Flexible(
               child: FractionallySizedBox(
                 widthFactor: 0.80,
@@ -713,7 +713,7 @@ class _MapaArtelyState extends State<MapaArtely> {
                 widthFactor: 0.80,
               ),
             ),
-            _botonBusqueda(),
+            _botonExtra(),
           ],
         ),
       );
@@ -900,9 +900,9 @@ class _MapaArtelyState extends State<MapaArtely> {
   }
 
   //Carga el botón de protegiddos a la barra superior
-  Widget _botonProtegidos() {
+  Widget _botonRutas() {
     return Tooltip(
-      message: 'Mis protegidos',
+      message: 'Mis rutas',
       child: MaterialButton(
         elevation: 5.0,
         minWidth: 10.0,
@@ -910,12 +910,12 @@ class _MapaArtelyState extends State<MapaArtely> {
         shape: CircleBorder(),
         padding: EdgeInsets.all(10.0),
         child: Icon(
-          Icons.security,
+          Icons.place,
           color: Colors.cyan,
           size: 27.0,
         ),
         onPressed: () {
-          Navigator.of(context).pushNamed('protegidos');
+          Navigator.of(context).pushNamed('rutas');
         },
       ),
     );
@@ -937,7 +937,7 @@ class _MapaArtelyState extends State<MapaArtely> {
           size: 27.0,
         ),
         onPressed: () {
-          Navigator.of(context).pushNamed('protegidos');
+          Navigator.of(context).pushNamed('rutas');
         },
       ),
     );
