@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -18,6 +17,7 @@ import 'package:prueba_maps/src/Class/Routes.dart' as Rutas;
 import 'package:prueba_maps/src/Class/RoutesMaps.dart';
 import 'package:prueba_maps/src/Provider/Notificaciones_push.dart';
 import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
+import 'package:prueba_maps/src/Util/VentanaEmergente.dart';
 
 class MapaArtely extends StatefulWidget {
   @override
@@ -25,15 +25,6 @@ class MapaArtely extends StatefulWidget {
 }
 
 class _MapaArtelyState extends State<MapaArtely> {
-  //Inician variables
-  final _estilo1 = TextStyle(
-    fontSize: 20.0,
-  );
-
-  final _estilo2 = TextStyle(
-    fontSize: 17.0,
-  );
-
   //Variables de Google Maps
   Completer<GoogleMapController> _controller = Completer();
   GoogleMapController _mapController;
@@ -56,8 +47,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   int tipo;
   bool enViaje = false;
   PreferenciasUsuario preferencias = new PreferenciasUsuario();
-
-  final backgroundtext = 'Buscar';
+  
 
   //Terminan variables
 
@@ -94,6 +84,21 @@ class _MapaArtelyState extends State<MapaArtely> {
               //child: Container(color: Colors.cyan,),
               child: _crearBotones(),
             ),
+            // Positioned(
+            //   width: _maxwidth * 0.3,
+            //   height: _maxheight * 0.3,
+            //   bottom: _maxheight * 0.5,
+            //   left: _maxwidth * 0.5,
+            //   child: Container(
+            //     color: btnColorVamos,
+            //     child: Center(
+            //       child: Icon(
+            //         Icons.center_focus_strong,
+            //         color: Colors.blue,
+            //       ),
+            //     ),
+            //   ),
+            // ),
             Positioned(
               width: _maxwidth * 0.93,
               top: _maxheight * 0.05,
@@ -101,7 +106,7 @@ class _MapaArtelyState extends State<MapaArtely> {
               child: Column(
                 children: <Widget>[
                   AnimatedSwitcher(
-                    duration: Duration(milliseconds: 300),
+                    duration: Duration(milliseconds: 400),
                     child: barraSuperior,
                     transitionBuilder:
                         (Widget child, Animation<double> animation) {
@@ -125,7 +130,7 @@ class _MapaArtelyState extends State<MapaArtely> {
               top: _maxheight * 0.85,
               left: _maxwidth * 0.07,
               child: AnimatedSwitcher(
-                duration: Duration(milliseconds: 700),
+                duration: Duration(milliseconds: 500),
                 child: botonesWidget,
               ),
             ),
@@ -171,43 +176,40 @@ class _MapaArtelyState extends State<MapaArtely> {
     if (resultado.containsKey(PermissionGroup.locationWhenInUse)) {
       if (resultado[PermissionGroup.locationWhenInUse] ==
           PermissionStatus.denied) {
-        showDialog(
-          context: this.context,
-          builder: (_) => _mostrarAlerta(),
-        );
-        sleep(Duration(seconds: 2));
-        _verificarPermisos();
-      }
-    }
-  }
-
-  AlertDialog _mostrarAlerta() {
-    return AlertDialog(
-        title: Text(
-          'Permisos',
-          style: _estilo1,
-        ),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-        backgroundColor: Colors.blue[50],
-        content: Container(
-          height: 100.0,
-          child: Column(
+        VentanaEmergente alerta = VentanaEmergente(
+          titulo: 'Permisos denegados',
+          colorTitulo: Colors.white,
+          backgroundColorTitulo: Colors.red,
+          height: 400,
+          contenido: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
             children: <Widget>[
               Text(
-                'Se necesitan permisos',
-                style: _estilo2,
+                'Se necesitan los permisos de ubicación.',
+                style: TextStyle(
+                  color: Colors.blueGrey,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 18.0,
+                ),
               ),
               SizedBox(
                 height: 10.0,
               ),
               Icon(
-                Icons.location_disabled,
-                size: 70.0,
+                Icons.error,
+                color: Colors.red,
+                size: 75.0,
               ),
             ],
           ),
-        ));
+        );
+        alerta.mostrarVentana(context);
+        await Future.delayed(Duration(seconds: 3));
+        alerta.cerrarVentana(context);
+        _solicitarPermisos();
+      }
+    }
   }
 
   //Metodo para verificar permisos de geolocalización
@@ -219,8 +221,8 @@ class _MapaArtelyState extends State<MapaArtely> {
     }
   }
 
-  //Método que permite ubicar el dispositivo.
-  void _ubicarme() async {
+  //Método que permite ubicar el dispositivo y agrega un marcador en la posición actual.
+  void _ubicarmeMarcador() async {
     Position position = await Geolocator()
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
     _moverConZoom(position, 16.0);
@@ -242,17 +244,24 @@ class _MapaArtelyState extends State<MapaArtely> {
     });
   }
 
+  //Método que permite ubicar el dispositivo y agrega un marcador en la posición actual.
+  void _ubicarme() async {
+    Position position = await Geolocator()
+        .getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
+    _moverConZoom(position, 16.0);
+  }
+
   //Método que detiene la detección de la ubicación del dispositivo.
   void _detener() {
     setState(() {
       marcadores.clear();
       polylinesRutas.clear();
-      botonesWidget = Container();
+      botonesWidget = SizedBox();
+      barraSuperior = SizedBox();
       encodedRuta = '';
       lugares.clear();
       tipo = 0;
       if (enViaje) {
-        print('El usuario estaba en viaje');
         enViaje = false;
 
         Firestore.instance
@@ -271,7 +280,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     });
   }
 
-  //Método encargado de crear el mapa. 67Lo retorna como widget.
+  //Método encargado de crear el mapa. Lo retorna como widget.
   GoogleMap _creaMapa() {
     return GoogleMap(
       mapType: MapType.normal,
@@ -284,14 +293,22 @@ class _MapaArtelyState extends State<MapaArtely> {
       mapToolbarEnabled:
           false, //Quita los botones de naavegación cuando se presiona un marcador.
       onMapCreated: (GoogleMapController controller) async {
-        Position p = await Geolocator()
-            .getCurrentPosition(desiredAccuracy: LocationAccuracy.medium);
-        _controller.complete(controller);
-        _mapController = controller;
-        _mapController.moveCamera(CameraUpdate.newLatLngZoom(
-          LatLng(p.latitude, p.longitude),
-          15.0,
-        ));
+        try {
+          if (await _permissionHandler
+                  .checkPermissionStatus(PermissionGroup.locationWhenInUse) ==
+              PermissionStatus.granted) {
+            Position p = await Geolocator()
+                .getCurrentPosition(desiredAccuracy: LocationAccuracy.medium);
+            _controller.complete(controller);
+            _mapController = controller;
+            _mapController.moveCamera(CameraUpdate.newLatLngZoom(
+              LatLng(p.latitude, p.longitude),
+              15.0,
+            ));
+          }
+        } catch (e) {
+          print('Error al ubicar el dispositivo. $e');
+        }
       },
     );
   }
@@ -305,6 +322,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     });
   }
 
+  //Método que se encarga de hacer la animación cuando el usuario está en viaje.
   void _moverRuta(LatLngBounds bounds, double zoom) {
     setState(() {
       final ubicacion = CameraUpdate.newLatLngBounds(bounds, zoom);
@@ -314,13 +332,17 @@ class _MapaArtelyState extends State<MapaArtely> {
 
   //Método que regresa el widget de la barra de busqueda
   void cargarBarraBusqueda() {
-    _ubicarme();
+    _ubicarmeMarcador();
     setState(() {
       barraSuperior = WillPopScope(
         onWillPop: () {
           setState(() {
             cargaBarraSuperior();
+            rutas.clear();
+            polylinesRutas.clear();
             marcadores.clear();
+            botonesWidget = SizedBox();
+            _ubicarme();
           });
           return null;
         },
@@ -333,7 +355,7 @@ class _MapaArtelyState extends State<MapaArtely> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15.0),
             ),
-            hintText: backgroundtext,
+            hintText: 'Buscar',
             contentPadding: EdgeInsets.symmetric(
               horizontal: 15.0,
               vertical: 18.0,
@@ -352,17 +374,26 @@ class _MapaArtelyState extends State<MapaArtely> {
   }
 
   //Método que busca el lugar ingresado en la barra de busqueda.
-  Future<void> _buscarLugar(String value) async {
+  Future _buscarLugar(String value) async {
     BusquedaMaps busqueda = BusquedaMaps();
     busqueda.search = value;
     http.Response res = await http.get(busqueda.urlBusqueda);
     //debugPrint(res.body);
     PlacesMaps placesMaps = PlacesMaps.fromJson(jsonDecode(res.body));
     setState(() {
+      if (marcadores.length == 2 && polylinesRutas.isNotEmpty) {
+        botonesWidget = SizedBox();
+        polylinesRutas.clear();
+        List oldMarkers = marcadores.toList();
+        oldMarkers.removeLast();
+        marcadores = oldMarkers.toSet();
+      }
       lugares = Set.from(placesMaps.results);
     });
+    return await Future.delayed(Duration(milliseconds: 300));
   }
 
+  //Método encargado de obtener la lista de los lugares
   Widget _listaResult() {
     return FutureBuilder(
       builder: (BuildContext context, AsyncSnapshot snapshot) {
@@ -373,37 +404,96 @@ class _MapaArtelyState extends State<MapaArtely> {
               color: Color.fromRGBO(255, 255, 255, 0.9),
               borderRadius: BorderRadius.vertical(
                 top: Radius.circular(10.0),
-                bottom: Radius.circular(25.0),
+                bottom: Radius.circular(15.0),
               ),
             ),
             width: MediaQuery.of(context).size.width * 0.93,
-            height: MediaQuery.of(context).size.height * 0.35,
-            child: ListView.builder(
-              itemCount: lugares.length,
-              itemBuilder: (BuildContext context, int index) {
-                return ListTile(
-                    title: Text(lugares.elementAt(index).name),
-                    subtitle: Text(lugares.elementAt(index).formattedAddress),
-                    leading: SizedBox(
-                        width: 30.0,
-                        height: 30.0,
-                        child: Image.network(lugares.elementAt(index).icon)),
-                    contentPadding: EdgeInsets.only(
-                      top: 0.0,
-                      bottom: 7.5,
-                      left: 10.0,
-                      right: 15.0,
-                    ),
+            height: MediaQuery.of(context).size.height * 0.42,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 10.0),
+              child: ListView.builder(
+                itemCount: lugares.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return GestureDetector(
                     onTap: () {
-                      print(index);
                       _addMarcador(index);
                       _botonRuta();
-                    });
-              },
+                    },
+                    child: Card(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10.0, vertical: 8.0),
+                            child: CircleAvatar(
+                              backgroundColor: Colors.transparent,
+                              child:
+                                  Image.network(lugares.elementAt(index).icon),
+                            ),
+                          ),
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 5.0),
+                                  child: Text(
+                                    lugares.elementAt(index).name,
+                                    style: TextStyle(
+                                        color: Colors.blue,
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                                Text(
+                                  lugares.elementAt(index).formattedAddress,
+                                  style: TextStyle(color: Colors.black45),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           );
         } else {
           return Container();
+          // return Container(
+          //     decoration: BoxDecoration(
+          //       border: Border.all(color: Colors.blue),
+          //       color: Color.fromRGBO(255, 255, 255, 0.9),
+          //       borderRadius: BorderRadius.vertical(
+          //         top: Radius.circular(10.0),
+          //         bottom: Radius.circular(25.0),
+          //       ),
+          //     ),
+          //     width: MediaQuery.of(context).size.width * 0.93,
+          //     height: MediaQuery.of(context).size.height * 0.30,
+          //     child: Column(
+          //       mainAxisAlignment: MainAxisAlignment.center,
+          //       children: <Widget>[
+          //         Text(
+          //           'No se han encontrado resultados :(',
+          //           style: TextStyle(
+          //               fontSize: 18.0,
+          //               color: Colors.blueGrey,
+          //               fontWeight: FontWeight.w500),
+          //         ),
+          //         SizedBox(
+          //           height: 10.0,
+          //         ),
+          //         Icon(
+          //           Icons.cancel,
+          //           color: Colors.red,
+          //           size: 70.0,
+          //         ),
+          //       ],
+          //     ));
         }
       },
     );
@@ -442,6 +532,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     if (marcadores.length >= 2) {
       setState(() {
         botonesWidget = Container(
+          key: ValueKey('Seleccion tipo viaje'),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
@@ -481,143 +572,132 @@ class _MapaArtelyState extends State<MapaArtely> {
       });
     }
     return AnimatedSwitcher(
-      duration: Duration(milliseconds: 1500),
+      duration: Duration(milliseconds: 300),
       child: botonesWidget,
     );
   }
 
-  Future<void> generarRuta(String modo) async {
+  void generarRuta(String modo) async {
     BusquedaRoutes busqueda = BusquedaRoutes();
-    // int indexPunto = 1;
     int rutaSeleccionada = 1;
 
     String origen =
         '${marcadores.elementAt(0).position.latitude},${marcadores.elementAt(0).position.longitude}';
     String destino =
         '${marcadores.elementAt(1).position.latitude},${marcadores.elementAt(1).position.longitude}';
-    print('Origen = $origen');
-    print('Destino = $destino');
+
     busqueda.origen = origen;
     busqueda.destino = destino;
     busqueda.modo = modo;
     http.Response res = await http.get(busqueda.urlRoutes);
     //debugPrint(res.body);
     RoutesMaps response = RoutesMaps.fromJson(jsonDecode(res.body));
-    botonesWidget = Container(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Container(
-            height: 40.0,
-            child: FlatButton.icon(
-              onPressed: () {
-                if (rutaSeleccionada == 1) {
-                  seleccionaRuta(rutaSeleccionada - 1, response.routes);
-                }
-                iniciarViaje();
-              },
-              color: coloresRuta.elementAt(rutaSeleccionada - 1),
-              icon: Icon(Icons.play_arrow),
-              label: Text(
-                'Ruta $rutaSeleccionada',
-                style: TextStyle(
-                  fontSize: 18.0,
-                ),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(15.0),
-                  bottomLeft: Radius.circular(15.0),
-                ),
-              ),
-            ),
-          ),
-          Container(
-            height: 40.0,
-            width: 50.0,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.black45),
-              borderRadius: BorderRadius.only(
-                topRight: Radius.circular(15.0),
-                bottomRight: Radius.circular(15.0),
-              ),
-            ),
-            child: PopupMenuButton(
-                color: Colors.white,
-                padding: EdgeInsets.all(2.0),
-                icon: Icon(
-                  Icons.arrow_drop_up,
-                  color: coloresRuta.elementAt(rutaSeleccionada - 1),
-                  size: 35.0,
-                ),
-                onSelected: (selecionado) {
-                  setState(() {
-                    rutaSeleccionada = selecionado;
-                  });
-                  print(rutaSeleccionada);
-                  seleccionaRuta(rutaSeleccionada - 1, response.routes);
+
+    setState(() {
+      botonesWidget = Container(
+        key: ValueKey('Selecciona ruta'),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Container(
+              height: 40.0,
+              child: FlatButton.icon(
+                onPressed: () {
+                  print('Ruta seleccionada = $rutaSeleccionada');
+                  if (rutaSeleccionada == 1) {
+                    seleccionaRuta(rutaSeleccionada - 1, response.routes);
+                  }
+                  iniciarViaje();
                 },
-                itemBuilder: (BuildContext context) {
-                  int numRuta = 0;
-                  List<PopupMenuEntry> opciones = <PopupMenuEntry>[];
-                  response.routes.forEach((ruta) {
-                    numRuta++;
-                    opciones.add(
-                      PopupMenuItem(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Text(
-                              'Ruta $numRuta',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: coloresRuta.elementAt(numRuta - 1),
+                color: coloresRuta.elementAt(rutaSeleccionada - 1),
+                icon: Icon(Icons.play_arrow),
+                label: Text(
+                  '¡Vamos!',
+                  style: TextStyle(
+                    fontSize: 18.0,
+                  ),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(15.0),
+                    bottomLeft: Radius.circular(15.0),
+                  ),
+                ),
+              ),
+            ),
+            Container(
+              height: 40.0,
+              width: 50.0,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.black45),
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(15.0),
+                  bottomRight: Radius.circular(15.0),
+                ),
+              ),
+              child: PopupMenuButton(
+                  color: Colors.white,
+                  padding: EdgeInsets.all(2.0),
+                  icon: Icon(
+                    Icons.arrow_drop_up,
+                    color: coloresRuta.elementAt(rutaSeleccionada - 1),
+                    size: 35.0,
+                  ),
+                  onSelected: (selecionado) {
+                    setState(() {
+                      rutaSeleccionada = selecionado;
+                    });
+                    print(rutaSeleccionada);
+                    seleccionaRuta(rutaSeleccionada - 1, response.routes);
+                  },
+                  itemBuilder: (BuildContext context) {
+                    int numRuta = 0;
+                    List<PopupMenuEntry> opciones = <PopupMenuEntry>[];
+                    response.routes.forEach((ruta) {
+                      numRuta++;
+                      opciones.add(
+                        PopupMenuItem(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Text(
+                                'Ruta $numRuta',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: coloresRuta.elementAt(numRuta - 1),
+                                ),
+                                textAlign: TextAlign.start,
                               ),
-                              textAlign: TextAlign.start,
-                            ),
-                            Text(
-                              'Tiempo aproximado: ${ruta.legs.elementAt(0).duration.text}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black54,
+                              Text(
+                                'Tiempo aproximado: ${ruta.legs.elementAt(0).duration.text}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          value: numRuta,
                         ),
-                        value: numRuta,
-                        // textStyle: TextStyle(
-                        //   color: coloresRuta.elementAt(numRuta - 1),
-                        // ),
-                      ),
-                    );
-                    if (numRuta < response.routes.length) {
-                      opciones.add(PopupMenuDivider());
-                    }
-                  });
-                  return opciones;
-                }),
-          ),
-        ],
-      ),
-    );
+                      );
+                      if (numRuta < response.routes.length) {
+                        opciones.add(PopupMenuDivider());
+                      }
+                    });
+                    return opciones;
+                  }),
+            ),
+          ],
+        ),
+      );
+    });
 
     response.routes.forEach(
       (routes) {
         List<LatLng> coordenadasPolilyne =
             decodeEncodedPolyline(routes.overviewPolyline.points);
-        // print('Ruta $rutaSeleccionada');
-        // coordenadasPolilyne.forEach((punto) async {
-        //   double distancia = await Geolocator().distanceBetween(
-        //       coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
-        //       coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
-        //       coordenadasPolilyne.elementAt(indexPunto).latitude,
-        //       coordenadasPolilyne.elementAt(indexPunto).longitude);
-        //   print(
-        //       punto.toString() + '\tDistancia al siguiente punto: $distancia');
-        //   indexPunto++;
-        // });
         PolylineId idRuta = PolylineId('Ruta $rutaSeleccionada');
         setState(() {
           Polyline temppoly = Polyline(
@@ -638,25 +718,6 @@ class _MapaArtelyState extends State<MapaArtely> {
           (legs) {
             legs.steps.forEach((steps) {
               encodedRuta = encodedRuta + '${steps.polyline.points}  ';
-              // List<LatLng> coordenadasPolilyne =
-              //     decodeEncodedPolyline(steps.polyline.points);
-
-              // coordenadasPolilyne.forEach(
-              //   (punto) async {
-              //     /*
-              //     double distancia = await Geolocator().distanceBetween(
-              //         coordenadasPolilyne.elementAt(indexPunto - 1).latitude,
-              //         coordenadasPolilyne.elementAt(indexPunto - 1).longitude,
-              //         coordenadasPolilyne.elementAt(indexPunto).latitude,
-              //         coordenadasPolilyne.elementAt(indexPunto).longitude);
-
-              //     print(punto.toString() +
-              //         '\tDistancia al siguiente punto: $distancia');
-
-              //     indexPunto++;
-              //     */
-              //   },
-              // );
             });
           },
         );
@@ -722,13 +783,14 @@ class _MapaArtelyState extends State<MapaArtely> {
 
   void _inicializaWidgets() {
     setState(() {
-      botonesWidget = Container();
+      botonesWidget = SizedBox();
       cargaBarraSuperior();
     });
   }
 
   void iniciarViaje() {
     setState(() async {
+      botonesWidget = SizedBox();
       enViaje = true;
       DocumentReference databaseReference = Firestore.instance
           .collection('Artely_BD')
@@ -749,8 +811,6 @@ class _MapaArtelyState extends State<MapaArtely> {
         "Encoded_Polyline": encodedRuta,
         "Tipo_Viaje": tipo,
         "PActual": new GeoPoint(inicio.latitude, inicio.longitude),
-        "Inicio_Viaje": DateTime.now(),
-        "Fin_Viaje": null,
       };
 
       try {
@@ -801,11 +861,11 @@ class _MapaArtelyState extends State<MapaArtely> {
 
   void seleccionaRuta(int rutaSeleccionada, List<Rutas.Routes> routes) {
     encodedRuta = '';
+    polylinesRutas.clear();
     List<LatLng> coordenadasPolilyne = decodeEncodedPolyline(
         routes.elementAt(rutaSeleccionada).overviewPolyline.points);
 
     PolylineId idRuta = PolylineId('Ruta ${rutaSeleccionada + 1}');
-    polylinesRutas.clear();
     setState(() {
       Polyline temppoly = Polyline(
         polylineId: idRuta,

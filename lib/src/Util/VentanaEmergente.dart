@@ -19,6 +19,10 @@ class VentanaEmergente {
     this.backgroundColorTitulo,
   });
 
+  void cerrarVentana(BuildContext context) {
+    Navigator.of(context).pop();
+  }
+
   void mostrarVentana(BuildContext context) {
     valoresDefault(context);
 
@@ -127,16 +131,13 @@ class VentanaEmergente {
     } else {
       return Positioned(
         top: MediaQuery.of(context).size.height * 0.08,
-        child: FittedBox(
-          alignment: Alignment.topCenter,
-          fit: BoxFit.contain,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15.0),
-              color: this.backgroundColor,
-            ),
-            child: this.contenido,
+        height: this.height - MediaQuery.of(context).size.height * 0.08,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15.0),
+            color: this.backgroundColor,
           ),
+          child: this.contenido,
         ),
       );
     }
