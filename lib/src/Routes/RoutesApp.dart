@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:prueba_maps/src/Pages/Configuracion.dart';
 import 'package:prueba_maps/src/Pages/Rutas.dart';
 import 'package:prueba_maps/src/pages/Login.dart';
 import 'package:prueba_maps/src/pages/MapaArtely.dart';
@@ -14,5 +15,6 @@ Map<String, WidgetBuilder> getApplicationRoutes() {
     'cuidadores': (BuildContext context) => PantallaCuidadores(),
     'rutas': (BuildContext context) => PantallaRutas(),
     'viajes': (BuildContext context) => PantallaViajes(),
+    'config': (BuildContext context) => PantallaConfiguracion(),
   };
 }

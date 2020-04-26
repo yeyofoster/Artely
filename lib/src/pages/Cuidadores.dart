@@ -10,9 +10,9 @@ class PantallaCuidadores extends StatefulWidget {
 }
 
 class _PantallaCuidadoresState extends State<PantallaCuidadores> {
-  Future<QuerySnapshot> _getReferencias;
-  Future actualiza;
-  List<Cuidador> cuidadores = [];
+  Future _getCuidadores;
+  Future _actualiza;
+  List<Cuidador> cuidadores = List<Cuidador>();
   TextEditingController correoController = TextEditingController();
   PreferenciasUsuario _preferenciasUsuario;
   final _formKey = GlobalKey<FormState>();
@@ -22,7 +22,7 @@ class _PantallaCuidadoresState extends State<PantallaCuidadores> {
     super.initState();
     _preferenciasUsuario = new PreferenciasUsuario();
     cuidadores.clear();
-    actualiza = refreshCuidadores();
+    _actualiza = refreshCuidadores();
   }
 
   @override
@@ -38,14 +38,12 @@ class _PantallaCuidadoresState extends State<PantallaCuidadores> {
           tooltip: 'Agregar Cuidador',
           child: Icon(Icons.person_add),
           onPressed: () {
-            double width = MediaQuery.of(context).size.width * 0.75;
             double height = MediaQuery.of(context).size.height * 0.4;
             VentanaEmergente addCuidador = VentanaEmergente(
-              contenido: formularioCuidador(width),
+              contenido: formularioCuidador(),
               titulo: 'Añadir Cuidador',
               backgroundColorTitulo: Colors.blue[300],
               colorTitulo: Colors.white,
-              width: width,
               height: height,
             );
             addCuidador.mostrarVentana(context);
@@ -54,63 +52,50 @@ class _PantallaCuidadoresState extends State<PantallaCuidadores> {
         body: RefreshIndicator(
           color: Colors.cyan,
           child: listaCuidadoresWidget(),
-          onRefresh: () => refreshCuidadores(),
+          onRefresh: () => _actualiza = refreshCuidadores(),
         ),
       ),
     );
   }
 
-  //Método que obtiene las referencias de los cuidadores del usuario.
-  Future<QuerySnapshot> obtenerReferencias() async {
-    QuerySnapshot query = await Firestore.instance
-        .collection('Artely_BD')
-        .document(_preferenciasUsuario.userID)
-        .collection('Cuidadores')
-        .getDocuments();
-    return query;
-  }
-
-  //Método encargado de obtener los datos de los cuidadores.
-  //Necesita que se haya ejecutado obtener referencias previamente.
-  Future obtenerCuidadores(Future<QuerySnapshot> consulta) {
-    consulta.then(
-      (query) {
-        query.documents.forEach(
-          (DocumentSnapshot docRef) async {
-            String codDoc = docRef.data['Referencia'].documentID;
-            await Firestore.instance
-                .collection('Artely_BD')
-                .document(codDoc)
-                .get()
-                .then(
-              (DocumentSnapshot docCuidador) {
-                Cuidador cuid = Cuidador(
-                  nombre: docCuidador.data['Nombre'],
-                  pApellido: docCuidador.data['PApellido'],
-                  correo: docCuidador.data['Correo'],
-                  telefono: docCuidador.data['Telefono'],
-                );
-                cuidadores.add(cuid);
-              },
-            ).catchError(
-              (onError) {
-                print('Error');
-              },
-            );
+  //Actualiza la lista de cuidadores
+  Future refreshCuidadores() async {
+    setState(() {});
+    cuidadores.clear();
+    _getCuidadores = obtenerReferencias();
+    return await _getCuidadores.then(
+      (lista) async {
+        await Future.forEach(
+          lista,
+          (elem) async {
+            Cuidador temp = await obtenerDatos(elem.data['Referencia']);
+            cuidadores.add(temp);
           },
         );
       },
     );
-    return Future.delayed(Duration(milliseconds: 700));
+  }
+
+  //Método que obtiene las referencias de los cuidadores del usuario.
+  Future<List<DocumentSnapshot>> obtenerReferencias() async {
+    return await Firestore.instance
+        .collection('Artely_BD')
+        .document(_preferenciasUsuario.userID)
+        .collection('Cuidadores')
+        .getDocuments()
+        .then(
+          (query) => Future<List<DocumentSnapshot>>.value(query.documents),
+        );
   }
 
   //Método que regresa el ListView con los cuidadores.
   Widget listaCuidadoresWidget() {
     return FutureBuilder(
-      future: actualiza,
+      future: _actualiza,
       builder: (BuildContext context, AsyncSnapshot snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          if (cuidadores.isNotEmpty) {
+          if (cuidadores.length > 0) {
+            cuidadores.sort((a, b) => a.nombre.compareTo(b.nombre));
             return ListView.builder(
               itemCount: cuidadores.length,
               itemBuilder: (BuildContext context, int index) {
@@ -134,6 +119,11 @@ class _PantallaCuidadoresState extends State<PantallaCuidadores> {
                           Icons.person,
                           size: 28.0,
                         ),
+                      ),
+                      trailing: IconButton(
+                        icon: Icon(Icons.delete),
+                        color: Colors.red,
+                        onPressed: () => ventanaEliminarCuidador(index),
                       ),
                       contentPadding: EdgeInsets.only(
                         top: 0.0,
@@ -185,42 +175,35 @@ class _PantallaCuidadoresState extends State<PantallaCuidadores> {
             child: CircularProgressIndicator(),
           );
         }
-        return null;
+        return Container();
       },
     );
   }
 
   //Método que regresa el formulario  mostrar en la ventna emergente.
-  Widget formularioCuidador(double width) {
-    return Container(
-      width: width,
+  Widget formularioCuidador() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 15.0),
       child: Form(
         key: _formKey,
-        child: Container(
-          alignment: Alignment.topCenter,
-          padding: EdgeInsets.symmetric(
-            vertical: 22.0,
-            horizontal: 20.0,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Text(
-                'Ingresa el correo electrónico de tu cuidador',
-                style: TextStyle(fontSize: 17.0, color: Colors.blueGrey),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(
-                height: 15.0,
-              ),
-              _txtCorreo(),
-              SizedBox(
-                height: 25.0,
-              ),
-              _botonFormulario(),
-            ],
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              'Ingresa el correo electrónico de tu cuidador',
+              style: TextStyle(fontSize: 17.0, color: Colors.blueGrey),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(
+              height: 15.0,
+            ),
+            _txtCorreo(),
+            SizedBox(
+              height: 25.0,
+            ),
+            _botonFormulario(),
+          ],
         ),
       ),
     );
@@ -289,13 +272,6 @@ class _PantallaCuidadoresState extends State<PantallaCuidadores> {
     }
   }
 
-  //Obtiene una ctualizaciòn de los cuidadores
-  Future refreshCuidadores() async {
-    cuidadores.clear();
-    _getReferencias = obtenerReferencias();
-    return obtenerCuidadores(_getReferencias);
-  }
-
   //Método que agrega un nuevo cuidador a su list de cuidadores.
   //Regresa un widget mientras carga el insert o valida la consulta.
   Widget agregarCuidador(String text) {
@@ -309,29 +285,54 @@ class _PantallaCuidadoresState extends State<PantallaCuidadores> {
 
             if (result.documents.isNotEmpty) {
               DocumentSnapshot datosCuidador = result.documents.first;
+              bool existeCuidador;
+              //Validación en caso de que ya se haya agregado a ese cuidador antes.
+              existeCuidador = validarCuidador(datosCuidador);
 
-              //Método que agrega las referencias a laas colecciones correspondientes.
-              addCuidadorFirebase(datosCuidador);
+              if (existeCuidador) {
+                return Container(
+                  padding: EdgeInsets.all(25.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                          'Ya tienes agregado a ${datosCuidador.data['Nombre']} ${datosCuidador.data['PApellido']} como cuidador.'),
+                      SizedBox(height: 15.0),
+                      Icon(
+                        Icons.person,
+                        size: 70.0,
+                        color: Colors.cyan,
+                      )
+                    ],
+                  ),
+                );
+              }
+              //Agrega al cuidador en caso de que no exista.
+              else {
+                //Método que agrega las referencias a laas colecciones correspondientes.
+                addCuidadorFirebase(datosCuidador);
 
-              String nombreCuidador = datosCuidador.data['Nombre'] +
-                  ' ' +
-                  datosCuidador.data['PApellido'];
-              return Container(
-                padding: EdgeInsets.all(25.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text('Se ha agregado a $nombreCuidador como cuidador'),
-                    SizedBox(height: 15.0),
-                    Icon(
-                      Icons.check_circle,
-                      size: 70.0,
-                      color: Colors.lightGreen,
-                    )
-                  ],
-                ),
-              );
+                String nombreCuidador = datosCuidador.data['Nombre'] +
+                    ' ' +
+                    datosCuidador.data['PApellido'];
+                return Container(
+                  padding: EdgeInsets.all(25.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text('Se ha agregado a $nombreCuidador como cuidador'),
+                      SizedBox(height: 15.0),
+                      Icon(
+                        Icons.check_circle,
+                        size: 70.0,
+                        color: Colors.lightGreen,
+                      )
+                    ],
+                  ),
+                );
+              }
             } else {
               return Container(
                 padding: EdgeInsets.all(25.0),
@@ -361,7 +362,7 @@ class _PantallaCuidadoresState extends State<PantallaCuidadores> {
   }
 
   //Método que devuelve la busqueda del usuario.
-  Future buscarUsuario(String correo) async {
+  Future<QuerySnapshot> buscarUsuario(String correo) async {
     return await Firestore.instance
         .collection('Artely_BD')
         .where('Correo', isEqualTo: correo)
@@ -380,7 +381,141 @@ class _PantallaCuidadoresState extends State<PantallaCuidadores> {
         .collection('Cuidadores')
         .add(datos);
 
-    await refreshCuidadores();
-    setState(() {});
+    _actualiza = refreshCuidadores();
+  }
+
+  //Método que obtiene los datos de un cuidador.
+  //Necesita como parámetro un DocumentReference
+  Future<Cuidador> obtenerDatos(DocumentReference ref) async =>
+      await Firestore.instance
+          .collection('Artely_BD')
+          .document(ref.documentID)
+          .get()
+          .then(
+        (docCuid) {
+          return Cuidador(
+            nombre: docCuid.data['Nombre'],
+            pApellido: docCuid.data['PApellido'],
+            correo: docCuid.data['Correo'],
+            telefono: docCuid.data['Telefono'],
+          );
+        },
+      );
+
+  //Método que valida que ya se tenga agregado al cuidador que se intenta agregar.
+  bool validarCuidador(DocumentSnapshot datosCuidador) {
+    bool valor = false;
+    for (Cuidador c in cuidadores) {
+      if (c.correo == datosCuidador.data['Correo']) {
+        valor = true;
+      }
+    }
+    return valor;
+  }
+
+  //Método que muestra la ventana de confirmación para eliminar un cuidador
+  void ventanaEliminarCuidador(int index) {
+    Future<QuerySnapshot> elimCuid =
+        buscarUsuario(cuidadores.elementAt(index).correo);
+    elimCuid.then((query) {
+      DocumentSnapshot docCuid = query.documents.first;
+      VentanaEmergente ventanaEliminar = VentanaEmergente(
+        height: MediaQuery.of(context).size.height * 0.3,
+        titulo: 'Eliminar Cuidador',
+        contenido: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            SizedBox(
+              height: 20.0,
+            ),
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: TextStyle(
+                  color: Colors.blueGrey[600],
+                  fontSize: 18.0,
+                ),
+                children: [
+                  TextSpan(text: '¿Estás seguro de eliminar a '),
+                  TextSpan(
+                    text:
+                        '${docCuid.data['Nombre']} ${docCuid.data['PApellido']}',
+                    style: TextStyle(
+                      color: Colors.cyan,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  TextSpan(text: '?'),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 30.0,
+            ),
+            MaterialButton(
+              color: Colors.red[400],
+              minWidth: MediaQuery.of(context).size.width * 0.7,
+              height: 42.0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              child: Text('Eliminar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                VentanaEmergente cargaEliminacion = VentanaEmergente(
+                  height: MediaQuery.of(context).size.height * 0.3,
+                  contenido: FutureBuilder(
+                    future: buscarDocCuidador(docCuid.reference),
+                    builder: (BuildContext context, AsyncSnapshot snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done) {
+                        QuerySnapshot data = snapshot.data;
+                        try {
+                          eliminarDocCuidador(data.documents.first.documentID);
+                          return Column(
+                            children: <Widget>[
+                              Text('Eliminado :DDD'),
+                            ],
+                          );
+                        } catch (e) {
+                          return Column(
+                            children: <Widget>[
+                              Text('Ocurrió un error'),
+                            ],
+                          );
+                        }
+                      } else {
+                        return CircularProgressIndicator();
+                      }
+                    },
+                  ),
+                );
+                cargaEliminacion.mostrarVentana(context);
+              },
+            ),
+          ],
+        ),
+      );
+      ventanaEliminar.mostrarVentana(context);
+    });
+  }
+
+  //Método que regresa el documento del cuidador que se desea eliminar.
+  Future buscarDocCuidador(DocumentReference reference) async {
+    return await Firestore.instance
+        .collection('Artely_BD')
+        .document(_preferenciasUsuario.userID)
+        .collection('Cuidadores')
+        .where('Referencia', isEqualTo: reference)
+        .getDocuments();
+  }
+
+  Future<void> eliminarDocCuidador(String documentID) async {
+    await Firestore.instance
+        .collection('Artely_BD')
+        .document(_preferenciasUsuario.userID)
+        .collection('Cuidadores')
+        .document(documentID)
+        .delete();
+    _actualiza = refreshCuidadores();
   }
 }

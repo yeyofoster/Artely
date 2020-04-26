@@ -47,7 +47,6 @@ class _MapaArtelyState extends State<MapaArtely> {
   int tipo;
   bool enViaje = false;
   PreferenciasUsuario preferencias = new PreferenciasUsuario();
-  
 
   //Terminan variables
 
@@ -774,7 +773,7 @@ class _MapaArtelyState extends State<MapaArtely> {
                 widthFactor: 0.80,
               ),
             ),
-            _botonExtra(),
+            _botonConfiguracion(),
           ],
         ),
       );
@@ -982,9 +981,9 @@ class _MapaArtelyState extends State<MapaArtely> {
   }
 
   //Carga el botón de extra a la barra superior
-  Widget _botonExtra() {
+  Widget _botonConfiguracion() {
     return Tooltip(
-      message: 'Mis extra',
+      message: 'Mi configuración',
       child: MaterialButton(
         elevation: 5.0,
         minWidth: 10.0,
@@ -997,7 +996,7 @@ class _MapaArtelyState extends State<MapaArtely> {
           size: 27.0,
         ),
         onPressed: () {
-          Navigator.of(context).pushNamed('rutas');
+          Navigator.of(context).pushNamed('config');
         },
       ),
     );

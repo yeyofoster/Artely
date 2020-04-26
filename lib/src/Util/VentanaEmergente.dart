@@ -8,6 +8,7 @@ class VentanaEmergente {
   Color colorTitulo;
   Color backgroundColor;
   Color backgroundColorTitulo;
+  bool closeButton;
 
   VentanaEmergente({
     this.contenido,
@@ -17,6 +18,7 @@ class VentanaEmergente {
     this.colorTitulo,
     this.backgroundColor,
     this.backgroundColorTitulo,
+    this.closeButton,
   });
 
   void cerrarVentana(BuildContext context) {
@@ -37,30 +39,13 @@ class VentanaEmergente {
             child: Stack(
               children: <Widget>[
                 //Este el titulo del Dialog
-                getTitulo(context),
+                getTitle(context),
 
                 //Este es el contenido del Dialog
                 getBody(context),
 
                 //Este es el botón para cerrar
-                Align(
-                  alignment: Alignment(1.05, -1.03),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.close,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
+                getCloseButton(context),
               ],
             ),
           ),
@@ -89,15 +74,20 @@ class VentanaEmergente {
     if (this.backgroundColor == null) {
       this.backgroundColor = Colors.white;
     }
+
+    if (this.closeButton == null) {
+      this.closeButton = true;
+    }
   }
 
   //Método que regresa el Widget del titulo. Si el título es null regresa un widget vacio.
-  Widget getTitulo(BuildContext context) {
+  Widget getTitle(BuildContext context) {
     if (this.titulo == null) {
       return SizedBox();
     } else {
       return Container(
         height: MediaQuery.of(context).size.height * 0.08,
+        width: this.width,
         alignment: Alignment.center,
         padding: EdgeInsets.symmetric(
           vertical: 15.0,
@@ -121,25 +111,59 @@ class VentanaEmergente {
   Widget getBody(BuildContext context) {
     if (this.titulo == null) {
       return Container(
+        height: double.infinity,
+        width: double.infinity,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15.0),
           color: this.backgroundColor,
         ),
-        child: this.contenido,
+        child: SingleChildScrollView(
+          child: this.contenido,
+        ),
       );
     } else {
       return Positioned(
         top: MediaQuery.of(context).size.height * 0.08,
-        height: this.height - MediaQuery.of(context).size.height * 0.08,
+        left: this.width * 0.008,
         child: Container(
+          height: this.height - MediaQuery.of(context).size.height * 0.09,
+          width: this.width * 0.82,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15.0),
             color: this.backgroundColor,
           ),
-          child: this.contenido,
+          child: SingleChildScrollView(
+            child: this.contenido,
+          ),
         ),
       );
+    }
+  }
+
+  Widget getCloseButton(BuildContext context) {
+    if (closeButton) {
+      return Align(
+        alignment: Alignment(1.05, -1.03),
+        child: InkWell(
+          onTap: () {
+            Navigator.pop(context);
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.close,
+              color: Colors.black,
+            ),
+          ),
+        ),
+      );
+    } else {
+      return Container();
     }
   }
 }
