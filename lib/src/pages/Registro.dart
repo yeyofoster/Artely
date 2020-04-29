@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:prueba_maps/src/Util/VentanaEmergente.dart';
 
 class PantallaRegistro extends StatefulWidget {
   @override
@@ -10,65 +13,76 @@ class PantallaRegistro extends StatefulWidget {
 class _PantallaRegistroState extends State<PantallaRegistro> {
   final _formKey = GlobalKey<FormState>();
 
-  TextEditingController nombreController = TextEditingController();
-  TextEditingController apellidoController = TextEditingController();
-  TextEditingController correoController = TextEditingController();
-  TextEditingController contraController = TextEditingController();
-  TextEditingController telController = TextEditingController();
-  bool invisible;
-  Widget iconVisible;
-  //String nombre, ap, correo, contrasenia, tel;
+  TextEditingController _nombreController = TextEditingController();
+  TextEditingController _apellidoController = TextEditingController();
+  TextEditingController _correoController = TextEditingController();
+  TextEditingController _contraController = TextEditingController();
+  TextEditingController _telController = TextEditingController();
+  bool _invisible;
+  Widget _iconVisible;
 
   @override
   void initState() {
     super.initState();
-    invisible = true;
-    iconVisible = Icon(Icons.visibility_off, color: Colors.blueGrey);
+    _invisible = true;
+    _iconVisible = Icon(Icons.visibility_off, color: Colors.blueGrey);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-              colors: [
-                Colors.blue[200],
-                Colors.blue[50],
-              ],
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              stops: [0.1, 0.6],
-              tileMode: TileMode.clamp),
-        ),
-        child: Center(
-          child: Form(
-            key: _formKey,
-            child: Container(
-              padding: EdgeInsets.only(top: 70.0, left: 20.0, right: 20.0),
-              child: Container(
-                child: SingleChildScrollView(
+    double _maxHeight = MediaQuery.of(context).size.height;
+    double _maxWidth = MediaQuery.of(context).size.width;
+    return SafeArea(
+      child: Scaffold(
+        body: GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  colors: [
+                    Colors.blue[200],
+                    Colors.blue[50],
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  stops: [0.1, 0.6],
+                  tileMode: TileMode.clamp),
+            ),
+            width: _maxWidth,
+            height: _maxHeight,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  top: _maxHeight * 0.15,
+                  bottom: _maxHeight * 0.02,
+                  left: _maxWidth * 0.05,
+                  right: _maxWidth * 0.05,
+                ),
+                child: Form(
+                  key: _formKey,
                   child: Column(
                     children: <Widget>[
                       _txtNombre(),
                       SizedBox(
-                        height: 25.0,
+                        height: _maxHeight * 0.03,
                       ),
                       _txApellido(),
                       SizedBox(
-                        height: 25.0,
+                        height: _maxHeight * 0.035,
                       ),
                       _txtCorreo(),
                       SizedBox(
-                        height: 25.0,
+                        height: _maxHeight * 0.035,
                       ),
                       _txtTelefono(),
                       SizedBox(
-                        height: 25.0,
+                        height: _maxHeight * 0.035,
                       ),
                       _txtContrasenia(),
                       SizedBox(
-                        height: 50.0,
+                        height: _maxHeight * 0.065,
                       ),
                       _botonFormulario(),
                     ],
@@ -82,9 +96,10 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     );
   }
 
+  //Método que regresa el input para el nombre.
   Widget _txtNombre() {
     return TextFormField(
-      controller: nombreController,
+      controller: _nombreController,
       validator: (input) {
         if (input.isEmpty) {
           return 'Falta ingresar un nombre';
@@ -109,9 +124,10 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     );
   }
 
+  //Método que regresa el input para el apellido.
   Widget _txApellido() {
     return TextFormField(
-      controller: apellidoController,
+      controller: _apellidoController,
       textCapitalization: TextCapitalization.words,
       validator: (input) {
         if (input.isEmpty) {
@@ -136,9 +152,10 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     );
   }
 
+  //Método que regresa el input para el correo.
   Widget _txtCorreo() {
     return TextFormField(
-      controller: correoController,
+      controller: _correoController,
       keyboardType: TextInputType.emailAddress,
       validator: (input) {
         if (input.isEmpty) {
@@ -169,9 +186,10 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     );
   }
 
+  //Método que regresa el input para el telefono.
   Widget _txtTelefono() {
     return TextFormField(
-      controller: telController,
+      controller: _telController,
       validator: (input) {
         if (input.isEmpty) {
           return 'Falta este campo';
@@ -196,10 +214,11 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     );
   }
 
+  //Método que regresa el input para la contraseña.
   Widget _txtContrasenia() {
     return TextFormField(
-      controller: contraController,
-      obscureText: invisible,
+      controller: _contraController,
+      obscureText: _invisible,
       validator: (input) {
         if (input.isEmpty) {
           return 'Falta contraseña';
@@ -226,20 +245,18 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
           vertical: 20.0,
         ),
         suffixIcon: IconButton(
-          icon: iconVisible,
+          icon: _iconVisible,
           onPressed: () {
-            if (invisible) {
+            if (_invisible) {
               setState(() {
-                invisible = false;
-                iconVisible = Icon(Icons.visibility, color: Colors.blue);
-                print('Ahora soy visible: $invisible');
+                _invisible = false;
+                _iconVisible = Icon(Icons.visibility, color: Colors.blue);
               });
             } else {
               setState(() {
-                invisible = true;
-                iconVisible =
+                _invisible = true;
+                _iconVisible =
                     Icon(Icons.visibility_off, color: Colors.blueGrey);
-                print('Ahora soy invisible: $invisible');
               });
             }
           },
@@ -248,6 +265,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     );
   }
 
+  //Método que regresa el botón del formulario.
   Widget _botonFormulario() {
     return Container(
       width: MediaQuery.of(context).size.width * 0.90,
@@ -263,105 +281,169 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     );
   }
 
+  //Método que muestra ventana de carga y manda a llamar los métodos para crear el usuario.
   void _enviarDatos() async {
     if (_formKey.currentState.validate()) {
-      autenticaUsuario(context);
-      Navigator.of(context).pushNamed('/');
+      VentanaEmergente ventanaCarga = VentanaEmergente(
+        height: MediaQuery.of(context).size.height * 0.3,
+        contenido: FutureBuilder(
+          future: autenticaUsuario(),
+          builder: (BuildContext context, AsyncSnapshot snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              if (snapshot.data.runtimeType == AuthResult) {
+                AuthResult authRes = snapshot.data;
+                print(authRes.user);
+                registraUsuario(authRes.user);
+                return Container(
+                  height: MediaQuery.of(context).size.height * 0.3,
+                  child: Column(
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20.0),
+                        child: Text(
+                          '¡Bienvenido!',
+                          style: GoogleFonts.manrope(
+                            letterSpacing: 2.0,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 20.0,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 15.0),
+                        child: Icon(
+                          Icons.check_circle,
+                          color: Colors.green[400],
+                          size: 50.0,
+                        ),
+                      ),
+                      Text(
+                        'Usuario creado exitosamente. Inicia sesión',
+                        style: GoogleFonts.openSans(color: Colors.blueGrey),
+                        textAlign: TextAlign.center,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 15.0,
+                        ),
+                        child: MaterialButton(
+                          color: Colors.green[400],
+                          minWidth: MediaQuery.of(context).size.width * 0.6,
+                          child: Text('Continuar'),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                          ),
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/');
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                String errormessage;
+                PlatformException error = snapshot.data;
+                switch (error.code) {
+                  case "ERROR_EMAIL_ALREADY_IN_USE":
+                    errormessage =
+                        "Ya existe un usuario registrado con ese correo";
+                    break;
+                  default:
+                    errormessage = "Error desconocido. Intente más tarde";
+                }
+                print(errormessage);
+                return Container(
+                  height: MediaQuery.of(context).size.height * 0.3,
+                  child: Column(
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20.0),
+                        child: Text(
+                          'ERROR',
+                          style: GoogleFonts.manrope(
+                            letterSpacing: 2.0,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 20.0,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 15.0),
+                        child: Icon(
+                          Icons.cancel,
+                          color: Colors.red[400],
+                          size: 50.0,
+                        ),
+                      ),
+                      Text(
+                        errormessage,
+                        style: GoogleFonts.openSans(color: Colors.blueGrey),
+                        textAlign: TextAlign.center,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 15.0,
+                        ),
+                        child: MaterialButton(
+                          color: Colors.red[400],
+                          minWidth: MediaQuery.of(context).size.width * 0.6,
+                          child: Text('Continuar'),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            } else {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(),
+              );
+            }
+          },
+        ),
+      );
+      ventanaCarga.mostrarVentana(context);
     }
   }
 
-  void autenticaUsuario(BuildContext context) async {
+  //Método que intenta autenticar un nuevo usuario. Si ya existe ee correo retorna el error.
+  Future autenticaUsuario() async {
     try {
-      FirebaseAuth auth = FirebaseAuth.instance;
-      AuthResult result = await auth.createUserWithEmailAndPassword(
-        email: correoController.text,
-        password: contraController.text,
+      return await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _correoController.text,
+        password: _contraController.text,
       );
-      FirebaseUser user = result.user;
-      registraUsuario(user);
     } catch (error) {
       print(error);
-      print(error.code);
-      String errormessage;
-      switch (error.code) {
-        case "ERROR_EMAIL_ALREADY_IN_USE":
-          errormessage = "Ya existe un usuario registrado con ese correo.";
-          break;
-        default:
-          errormessage = "Error desconocido";
-      }
-      mostrarAlerta(context, 'Error', errormessage);
+      return error;
     }
   }
 
-  void registraUsuario(FirebaseUser user) {
+  //Método que guarda los datos del usuario en Firestore.
+  Future<void> registraUsuario(FirebaseUser user) async {
     try {
       final dbFire = Firestore.instance;
-      Map<String, dynamic> datosViaje = {
-        'Encoded_Polyline': '',
-        'PActual': null,
-        'PDestino': null,
-        'POrigen': null,
-        "Inicio_Viaje": null,
-        "Fin_Viaje": null,
-        'Tipo_Viaje': 1
-      };
 
       Map<String, dynamic> registro = {
         'En_viaje': false,
-        'Nombre': nombreController.text,
-        'PApellido': apellidoController.text,
-        'Correo': correoController.text,
-        'Telefono': int.parse(telController.text),
-        'Viaje': datosViaje
+        'Nombre': _nombreController.text,
+        'PApellido': _apellidoController.text,
+        'Correo': _correoController.text,
+        'Telefono': int.parse(_telController.text),
+        'Viaje': null
       };
 
-      dbFire
-          .collection('Artely_BD')
-          .document(user.uid)
-          .setData(registro)
-          .whenComplete(
-        () {
-          mostrarAlerta(context, 'Bienvenido', 'Usuario agregado con exito');
-        },
-      );
+      await dbFire.collection('Artely_BD').document(user.uid).setData(registro);
     } catch (e) {
-      print(e.toString());
       print(e.code);
     }
   }
-}
-
-void mostrarAlerta(BuildContext context, String titulo, String mensaje) {
-  showDialog(
-    context: context,
-    barrierDismissible: true,
-    builder: (context) {
-      return AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-        title: Text(titulo),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(mensaje),
-            SizedBox(
-              height: 15.0,
-            ),
-            FlutterLogo(
-              size: 70.0,
-            ),
-          ],
-        ),
-        actions: <Widget>[
-          FlatButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Aceptar'),
-          ),
-        ],
-      );
-    },
-  );
 }

@@ -1,6 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
+import 'package:prueba_maps/src/Util/VentanaEmergente.dart';
 
 class Login extends StatefulWidget {
   @override
@@ -25,69 +29,119 @@ class _LoginState extends State<Login> {
   Widget build(BuildContext context) {
     final maxWidth = MediaQuery.of(context).size.width;
     final maxHeight = MediaQuery.of(context).size.height;
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-              colors: [
-                Colors.blue[200],
-                Colors.blue[50],
-              ],
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              stops: [0.1, 0.6],
-              tileMode: TileMode.clamp),
-        ),
-        padding: EdgeInsets.symmetric(
-          vertical: maxHeight * 0.08,
-          horizontal: maxWidth * 0.04,
-        ),
-        //color: Colors.yellow[100],
-        child: ListView(
-          children: <Widget>[
-            Form(
-              key: _formKey,
+    return SafeArea(
+      child: Scaffold(
+        body: GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          child: Container(
+            width: maxWidth,
+            height: maxHeight,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  colors: [
+                    Colors.blue[200],
+                    Colors.blue[50],
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  stops: [0.1, 0.6],
+                  tileMode: TileMode.clamp),
+            ),
+            child: SingleChildScrollView(
               child: Column(
                 children: <Widget>[
-                  Icon(
-                    Icons.person_pin,
-                    color: Colors.blue,
-                    size: 250.0,
+                  Padding(
+                    padding: EdgeInsets.only(top: maxHeight * 0.08),
+                    child: Icon(
+                      Icons.person_pin,
+                      color: Colors.blue,
+                      size: 250.0,
+                    ),
                   ),
-                  _txtCorreo(),
-                  SizedBox(
-                    height: 25.0,
-                  ),
-                  _txtContrasenia(),
-                  Container(
-                    padding: EdgeInsets.symmetric(vertical: 20.0),
-                    child: InkWell(
-                      child: Text(
-                        '¿No tienes una cuenta? Registrate aquí!',
-                        style: TextStyle(
-                            color: Colors.blue,
-                            decoration: TextDecoration.underline),
-                      ),
-                      onTap: () {
+                  getFormulario(maxHeight, maxWidth),
+                ],
+              ),
+              // child: Form(
+              //   key: _formKey,
+              //   child:
+              //       Container(
+              //         width: MediaQuery.of(context).size.height * 0.50,
+              //         height: 50.0,
+              //         child: FlatButton(
+              //           onPressed: () => validaLogin(context),
+              //           color: Colors.blue,
+              //           textTheme: ButtonTextTheme.primary,
+              // shape: RoundedRectangleBorder(
+              //   borderRadius: BorderRadius.circular(20.0),
+              //           ),
+              //           child: Text('Ingresar'),
+              //         ),
+              //       ),
+
+              // ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+//Método que regresa el widget de formulario.
+  Widget getFormulario(double maxHeight, double maxWidth) {
+    return Form(
+      key: _formKey,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+            vertical: maxHeight * 0.01, horizontal: maxWidth * 0.05),
+        child: Column(
+          children: <Widget>[
+            _txtCorreo(),
+            SizedBox(
+              height: 25.0,
+            ),
+            _txtContrasenia(),
+            SizedBox(
+              height: 25.0,
+            ),
+            RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  color: Colors.blueGrey[700],
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14.0,
+                ),
+                children: [
+                  TextSpan(text: '¿No tienes una cuenta? '),
+                  TextSpan(
+                    text: 'Registrate aquí',
+                    style: TextStyle(color: Colors.blue),
+                    recognizer: new TapGestureRecognizer()
+                      ..onTap = () {
                         Navigator.pushNamed(context, 'registro');
                       },
-                    ),
-                  ),
-                  Container(
-                    width: MediaQuery.of(context).size.height * 0.50,
-                    height: 50.0,
-                    child: FlatButton(
-                      onPressed: () => validaLogin(context),
-                      color: Colors.blue,
-                      textTheme: ButtonTextTheme.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20.0),
-                      ),
-                      child: Text('Ingresar'),
-                    ),
                   ),
                 ],
               ),
+            ),
+            SizedBox(
+              height: 25.0,
+            ),
+            MaterialButton(
+              child: Text(
+                'Ingresar',
+                style: TextStyle(
+                  fontSize: 18.0,
+                  color: Colors.black87,
+                ),
+              ),
+              color: Colors.blue[300],
+              minWidth: maxWidth,
+              height: 50.0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.0)),
+              onPressed: () => validaLogin(context),
             ),
           ],
         ),
@@ -95,6 +149,7 @@ class _LoginState extends State<Login> {
     );
   }
 
+  //Método que regresa el input de la contraseña.
   Widget _txtContrasenia() {
     return TextFormField(
       controller: contraController,
@@ -131,14 +186,12 @@ class _LoginState extends State<Login> {
               setState(() {
                 invisible = false;
                 iconVisible = Icon(Icons.visibility, color: Colors.blue);
-                print('Ahora soy visible: $invisible');
               });
             } else {
               setState(() {
                 invisible = true;
                 iconVisible =
                     Icon(Icons.visibility_off, color: Colors.blueGrey);
-                print('Ahora soy invisible: $invisible');
               });
             }
           },
@@ -147,6 +200,7 @@ class _LoginState extends State<Login> {
     );
   }
 
+  //Método que regresa el input del correo
   Widget _txtCorreo() {
     return TextFormField(
       controller: correoController,
@@ -180,83 +234,99 @@ class _LoginState extends State<Login> {
     );
   }
 
+  //Método que valida el login
   Future<void> validaLogin(BuildContext context) async {
     if (_formKey.currentState.validate()) {
-      try {
-        FirebaseAuth auth = FirebaseAuth.instance;
-        AuthResult result = await auth.signInWithEmailAndPassword(
-            email: correoController.text, password: contraController.text);
-        FirebaseUser user = result.user;
-        if (user != null) {
-          Navigator.pushNamed(context, 'mapa');
-          PreferenciasUsuario preferencias = new PreferenciasUsuario();
-          preferencias.userID = user.uid;
-          print(
-              'Se ha guardado el user ID en las preferencias: ${preferencias.userID}');
-        } else {
-          print('No se encontró al usuario');
-        }
-      } catch (error) {
-        String errormessage;
-        switch (error.code) {
-          case "ERROR_INVALID_EMAIL":
-            errormessage = "Su correo no tiene un formato valido.";
-            break;
-          case "ERROR_WRONG_PASSWORD":
-            errormessage = "Su contraseña está mal.";
-            break;
-          case "ERROR_USER_NOT_FOUND":
-            errormessage =
-                "No existe ningún usuario registrado con ese correo.";
-            break;
-          case "ERROR_USER_DISABLED":
-            errormessage = "Este usuario ha sido deshabilitado.";
-            break;
-          case "ERROR_TOO_MANY_REQUESTS":
-            errormessage = "Error. Intente más tarde.";
-            break;
-          case "ERROR_OPERATION_NOT_ALLOWED":
-            errormessage = "No está habilitado este tipo de login.";
-            break;
-          default:
-            errormessage = "Error desconocido";
-        }
-        mostrarAlerta(context, 'Error', errormessage);
-      }
+      VentanaEmergente ventanaCarga = VentanaEmergente(
+        height: MediaQuery.of(context).size.height * 0.25,
+        contenido: FutureBuilder(
+          future: loggeaUsuario(),
+          builder: (BuildContext context, AsyncSnapshot snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              if (snapshot.data.runtimeType == AuthResult) {
+                AuthResult result = snapshot.data;
+                PreferenciasUsuario preferencias = new PreferenciasUsuario();
+                preferencias.userID = result.user.uid;
+                Navigator.of(context).pop();
+                Navigator.of(context).pushNamed('mapa');
+                return null;
+              } else {
+                String errormessage;
+                PlatformException error = snapshot.data;
+                switch (error.code) {
+                  case "ERROR_INVALID_EMAIL":
+                    errormessage = "Su correo no tiene un formato valido.";
+                    break;
+                  case "ERROR_WRONG_PASSWORD":
+                    errormessage = "Su contraseña está mal.";
+                    break;
+                  case "ERROR_USER_NOT_FOUND":
+                    errormessage =
+                        "No existe ningún usuario registrado con ese correo.";
+                    break;
+                  case "ERROR_USER_DISABLED":
+                    errormessage = "Este usuario ha sido deshabilitado.";
+                    break;
+                  case "ERROR_TOO_MANY_REQUESTS":
+                    errormessage = "Demasiados intentos consecutivos. Intente de nuevo en 2 minutos.";
+                    break;
+                  case "ERROR_OPERATION_NOT_ALLOWED":
+                    errormessage = "No está habilitado este tipo de login.";
+                    break;
+                  default:
+                    errormessage = "Error desconocido";
+                }
+                return Container(
+                  height: MediaQuery.of(context).size.height * 0.25,
+                  child: Column(
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20.0),
+                        child: Text(
+                          'ERROR',
+                          style: GoogleFonts.manrope(
+                            letterSpacing: 2.0,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 20.0,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 15.0),
+                        child: Icon(
+                          Icons.cancel,
+                          color: Colors.red[400],
+                          size: 50.0,
+                        ),
+                      ),
+                      Text(
+                        errormessage,
+                        style: GoogleFonts.openSans(color: Colors.blueGrey),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+            } else {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(),
+              );
+            }
+          },
+        ),
+      );
+      ventanaCarga.mostrarVentana(context);
     }
   }
 
-  void mostrarAlerta(BuildContext context, String titulo, String mensaje) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-          title: Text(titulo),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(mensaje),
-              SizedBox(
-                height: 15.0,
-              ),
-              FlutterLogo(
-                size: 70.0,
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            FlatButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Aceptar'),
-            ),
-          ],
-        );
-      },
-    );
+  Future loggeaUsuario() async {
+    try {
+      return await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: correoController.text, password: contraController.text);
+    } catch (error) {
+      return error;
+    }
   }
 }

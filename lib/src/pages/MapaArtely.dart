@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
@@ -18,6 +20,7 @@ import 'package:prueba_maps/src/Class/RoutesMaps.dart';
 import 'package:prueba_maps/src/Provider/Notificaciones_push.dart';
 import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
 import 'package:prueba_maps/src/Util/VentanaEmergente.dart';
+import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 class MapaArtely extends StatefulWidget {
   @override
@@ -67,73 +70,136 @@ class _MapaArtelyState extends State<MapaArtely> {
     final double _maxheight = MediaQuery.of(context).size.height;
 
     return SafeArea(
-      child: Scaffold(
-        body: Stack(
-          children: <Widget>[
-            Positioned(
-              width: _maxwidth,
-              height: _maxheight,
-              child: _creaMapa(),
-            ),
-            Positioned(
-              width: _maxwidth,
-              height: _maxheight * 0.10,
-              top: _maxheight * 0.84,
-              right: _maxwidth * 0.03,
-              //child: Container(color: Colors.cyan,),
-              child: _crearBotones(),
-            ),
-            // Positioned(
-            //   width: _maxwidth * 0.3,
-            //   height: _maxheight * 0.3,
-            //   bottom: _maxheight * 0.5,
-            //   left: _maxwidth * 0.5,
-            //   child: Container(
-            //     color: btnColorVamos,
-            //     child: Center(
-            //       child: Icon(
-            //         Icons.center_focus_strong,
-            //         color: Colors.blue,
-            //       ),
-            //     ),
-            //   ),
-            // ),
-            Positioned(
-              width: _maxwidth * 0.93,
-              top: _maxheight * 0.05,
-              left: _maxwidth * 0.03,
-              child: Column(
-                children: <Widget>[
-                  AnimatedSwitcher(
-                    duration: Duration(milliseconds: 400),
-                    child: barraSuperior,
-                    transitionBuilder:
-                        (Widget child, Animation<double> animation) {
-                      return SlideTransition(
-                        position: Tween<Offset>(
-                          begin: Offset(5.0, 0.0),
-                          end: Offset(0.0, 0.0),
-                        ).animate(animation),
-                        child: child,
-                      );
-                    },
-                  ),
-                  SizedBox(
-                    height: 5.0,
-                  ),
-                  _listaResult(),
-                ],
+      child: WillPopScope(
+        onWillPop: () {
+          if (!enViaje) {
+            VentanaEmergente cerrarApp = VentanaEmergente(
+              height: _maxheight * 0.3,
+              titulo: 'Cerrando',
+              backgroundColorTitulo: Colors.cyan,
+              contenido: Container(
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 15.0),
+                      child: Icon(
+                        Icons.exit_to_app,
+                        color: Colors.cyan,
+                        size: 50.0,
+                      ),
+                    ),
+                    Text(
+                      '¿Está seguro de cerrar la app?',
+                      style: GoogleFonts.openSans(color: Colors.blueGrey),
+                      textAlign: TextAlign.center,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 15.0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          MaterialButton(
+                            color: Colors.blue[400],
+                            minWidth: MediaQuery.of(context).size.width * 0.3,
+                            child: Text('Continuar'),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.0),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          SizedBox(
+                            width: 20.0,
+                          ),
+                          MaterialButton(
+                            color: Colors.red[400],
+                            minWidth: MediaQuery.of(context).size.width * 0.3,
+                            child: Text('Cerrar'),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.0),
+                            ),
+                            onPressed: () {
+                              SystemChannels.platform
+                                  .invokeMethod('SystemNavigator.pop');
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Positioned(
-              top: _maxheight * 0.85,
-              left: _maxwidth * 0.07,
-              child: AnimatedSwitcher(
-                duration: Duration(milliseconds: 500),
-                child: botonesWidget,
+            );
+            cerrarApp.mostrarVentana(context);
+          } else {}
+          return null;
+        },
+        child: Scaffold(
+          body: Stack(
+            children: <Widget>[
+              Positioned(
+                width: _maxwidth,
+                height: _maxheight,
+                child: _creaMapa(),
               ),
-            ),
-          ],
+              Positioned(
+                width: _maxwidth,
+                height: _maxheight * 0.10,
+                top: enViaje ? _maxheight * 0.75 : _maxheight * 0.84,
+                right: _maxwidth * 0.03,
+                //child: Container(color: Colors.cyan,),
+                child: _crearBotones(),
+              ),
+              Positioned(
+                width: _maxwidth * 0.93,
+                top: _maxheight * 0.05,
+                left: _maxwidth * 0.03,
+                child: Column(
+                  children: <Widget>[
+                    AnimatedSwitcher(
+                      duration: Duration(milliseconds: 400),
+                      child: barraSuperior,
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                        return SlideTransition(
+                          position: Tween<Offset>(
+                            begin: Offset(5.0, 0.0),
+                            end: Offset(0.0, 0.0),
+                          ).animate(animation),
+                          child: child,
+                        );
+                      },
+                    ),
+                    SizedBox(
+                      height: 5.0,
+                    ),
+                    _listaResult(),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: _maxheight * 0.85,
+                left: _maxwidth * 0.07,
+                child: AnimatedSwitcher(
+                  duration: Duration(milliseconds: 500),
+                  child: botonesWidget,
+                ),
+              ),
+              AnimatedSwitcher(
+                duration: Duration(
+                  milliseconds: 700,
+                ),
+                child:
+                    enViaje ? slideUpViaje(_maxheight, _maxwidth) : Container(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -170,44 +236,48 @@ class _MapaArtelyState extends State<MapaArtely> {
 
   //Método que solicita permisos de ubicación.
   _solicitarPermisos() async {
-    final resultado = await _permissionHandler
-        .requestPermissions([PermissionGroup.locationWhenInUse]);
-    if (resultado.containsKey(PermissionGroup.locationWhenInUse)) {
-      if (resultado[PermissionGroup.locationWhenInUse] ==
-          PermissionStatus.denied) {
-        VentanaEmergente alerta = VentanaEmergente(
-          titulo: 'Permisos denegados',
-          colorTitulo: Colors.white,
-          backgroundColorTitulo: Colors.red,
-          height: 400,
-          contenido: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            children: <Widget>[
-              Text(
-                'Se necesitan los permisos de ubicación.',
-                style: TextStyle(
-                  color: Colors.blueGrey,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 18.0,
+    try {
+      final resultado = await _permissionHandler
+          .requestPermissions([PermissionGroup.locationWhenInUse]);
+      if (resultado.containsKey(PermissionGroup.locationWhenInUse)) {
+        if (resultado[PermissionGroup.locationWhenInUse] ==
+            PermissionStatus.denied) {
+          VentanaEmergente alerta = VentanaEmergente(
+            titulo: 'Permisos denegados',
+            colorTitulo: Colors.white,
+            backgroundColorTitulo: Colors.red,
+            height: 400,
+            contenido: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.max,
+              children: <Widget>[
+                Text(
+                  'Se necesitan los permisos de ubicación.',
+                  style: TextStyle(
+                    color: Colors.blueGrey,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 18.0,
+                  ),
                 ),
-              ),
-              SizedBox(
-                height: 10.0,
-              ),
-              Icon(
-                Icons.error,
-                color: Colors.red,
-                size: 75.0,
-              ),
-            ],
-          ),
-        );
-        alerta.mostrarVentana(context);
-        await Future.delayed(Duration(seconds: 3));
-        alerta.cerrarVentana(context);
-        _solicitarPermisos();
+                SizedBox(
+                  height: 10.0,
+                ),
+                Icon(
+                  Icons.error,
+                  color: Colors.red,
+                  size: 75.0,
+                ),
+              ],
+            ),
+          );
+          alerta.mostrarVentana(context);
+          await Future.delayed(Duration(seconds: 3));
+          alerta.cerrarVentana(context);
+          _solicitarPermisos();
+        }
       }
+    } catch (e) {
+      print('Error al iniciar: $e');
     }
   }
 
@@ -256,7 +326,7 @@ class _MapaArtelyState extends State<MapaArtely> {
       marcadores.clear();
       polylinesRutas.clear();
       botonesWidget = SizedBox();
-      barraSuperior = SizedBox();
+      barraSuperior = cargaBarraSuperior();
       encodedRuta = '';
       lugares.clear();
       tipo = 0;
@@ -286,11 +356,23 @@ class _MapaArtelyState extends State<MapaArtely> {
       initialCameraPosition: _mexicoPosition,
       myLocationEnabled: true,
       myLocationButtonEnabled: false,
+      compassEnabled: true,
+      rotateGesturesEnabled: true,
+      tiltGesturesEnabled: false,
+      trafficEnabled: false,
       zoomGesturesEnabled: true,
       markers: Set.from(marcadores), //Crea la lista de marcadores para el mapa
       polylines: polylinesRutas,
       mapToolbarEnabled:
           false, //Quita los botones de naavegación cuando se presiona un marcador.
+      onTap: (puntoLatLng) {
+        FocusScope.of(context).unfocus();
+        if (polylinesRutas.isEmpty) {
+          setState(() {
+            _detener();
+          });
+        }
+      },
       onMapCreated: (GoogleMapController controller) async {
         try {
           if (await _permissionHandler
@@ -304,6 +386,8 @@ class _MapaArtelyState extends State<MapaArtely> {
               LatLng(p.latitude, p.longitude),
               15.0,
             ));
+          } else {
+            _verificarPermisos();
           }
         } catch (e) {
           print('Error al ubicar el dispositivo. $e');
@@ -336,7 +420,7 @@ class _MapaArtelyState extends State<MapaArtely> {
       barraSuperior = WillPopScope(
         onWillPop: () {
           setState(() {
-            cargaBarraSuperior();
+            barraSuperior = cargaBarraSuperior();
             rutas.clear();
             polylinesRutas.clear();
             marcadores.clear();
@@ -733,57 +817,55 @@ class _MapaArtelyState extends State<MapaArtely> {
     );
   }
 
-  void cargaBarraSuperior() {
-    setState(() {
-      barraSuperior = Container(
-        padding: EdgeInsets.symmetric(
-          vertical: 4.0,
-          horizontal: 0.0,
-        ),
-        key: ValueKey('Barra Superior'),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(25.0),
-          color: Colors.white70,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            _botonBusqueda(),
-            Flexible(
-              child: FractionallySizedBox(
-                widthFactor: 0.80,
-              ),
+  Widget cargaBarraSuperior() {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        vertical: 4.0,
+        horizontal: 0.0,
+      ),
+      key: ValueKey('Barra Superior'),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(25.0),
+        color: Colors.white70,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _botonBusqueda(),
+          Flexible(
+            child: FractionallySizedBox(
+              widthFactor: 0.80,
             ),
-            _botonRutas(),
-            Flexible(
-              child: FractionallySizedBox(
-                widthFactor: 0.80,
-              ),
+          ),
+          _botonRutas(),
+          Flexible(
+            child: FractionallySizedBox(
+              widthFactor: 0.80,
             ),
-            _botonCuidadores(),
-            Flexible(
-              child: FractionallySizedBox(
-                widthFactor: 0.80,
-              ),
+          ),
+          _botonCuidadores(),
+          Flexible(
+            child: FractionallySizedBox(
+              widthFactor: 0.80,
             ),
-            _botonViajes(),
-            Flexible(
-              child: FractionallySizedBox(
-                widthFactor: 0.80,
-              ),
+          ),
+          _botonViajes(),
+          Flexible(
+            child: FractionallySizedBox(
+              widthFactor: 0.80,
             ),
-            _botonConfiguracion(),
-          ],
-        ),
-      );
-    });
+          ),
+          _botonConfiguracion(),
+        ],
+      ),
+    );
   }
 
   void _inicializaWidgets() {
     setState(() {
       botonesWidget = SizedBox();
-      cargaBarraSuperior();
+      barraSuperior = cargaBarraSuperior();
     });
   }
 
@@ -998,6 +1080,33 @@ class _MapaArtelyState extends State<MapaArtely> {
         onPressed: () {
           Navigator.of(context).pushNamed('config');
         },
+      ),
+    );
+  }
+
+  slideUpViaje(double maxheight, double maxwidth) {
+    return SlidingUpPanel(
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(25.0),
+        topRight: Radius.circular(25.0),
+      ),
+      maxHeight: maxheight * 0.22,
+      minHeight: maxheight * 0.1,
+      collapsed: Container(
+        alignment: Alignment.center,
+        padding: EdgeInsets.symmetric(horizontal: maxwidth * 0.02),
+        decoration: BoxDecoration(
+          color: Colors.yellow[300],
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(25.0),
+            topRight: Radius.circular(25.0),
+          ),
+        ),
+        child: Text('Realizando viaje'),
+      ),
+      panel: Container(
+        alignment: Alignment.center,
+        child: Text('Datos viaje'),
       ),
     );
   }
