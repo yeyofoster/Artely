@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flare_flutter/flare_actor.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +18,7 @@ class _LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
   bool invisible;
   Widget iconVisible;
+  Future loggin;
 
   @override
   void initState() {
@@ -35,10 +37,27 @@ class _LoginState extends State<Login> {
           onTap: () {
             FocusScope.of(context).unfocus();
           },
+          // child: Stack(
+          //   children: <Widget>[
+          //     Container(
+          //       width: maxWidth,
+          //       height: maxHeight,
+          //       color: Colors.blue,
+          //       child: SvgPicture.asset(
+          //         'assets/svg/artely_back.svg',
+          //         fit: BoxFit.fill,
+          //       ),
+          //     ),
+          //   ],
+          // ),
           child: Container(
             width: maxWidth,
             height: maxHeight,
             decoration: BoxDecoration(
+              // image: DecorationImage(
+              //   image: AssetImage('assets/img/Artely_bakcground.png'),
+              //   fit: BoxFit.fill,
+              // ),
               gradient: LinearGradient(
                   colors: [
                     Colors.blue[200],
@@ -63,24 +82,6 @@ class _LoginState extends State<Login> {
                   getFormulario(maxHeight, maxWidth),
                 ],
               ),
-              // child: Form(
-              //   key: _formKey,
-              //   child:
-              //       Container(
-              //         width: MediaQuery.of(context).size.height * 0.50,
-              //         height: 50.0,
-              //         child: FlatButton(
-              //           onPressed: () => validaLogin(context),
-              //           color: Colors.blue,
-              //           textTheme: ButtonTextTheme.primary,
-              // shape: RoundedRectangleBorder(
-              //   borderRadius: BorderRadius.circular(20.0),
-              //           ),
-              //           child: Text('Ingresar'),
-              //         ),
-              //       ),
-
-              // ),
             ),
           ),
         ),
@@ -141,7 +142,12 @@ class _LoginState extends State<Login> {
               height: 50.0,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20.0)),
-              onPressed: () => validaLogin(context),
+              onPressed: () {
+                setState(() {
+                  loggin = loggeaUsuario();
+                  validaLogin(context);
+                });
+              },
             ),
           ],
         ),
@@ -235,21 +241,21 @@ class _LoginState extends State<Login> {
   }
 
   //Método que valida el login
-  Future<void> validaLogin(BuildContext context) async {
+  void validaLogin(BuildContext context) {
     if (_formKey.currentState.validate()) {
       VentanaEmergente ventanaCarga = VentanaEmergente(
         height: MediaQuery.of(context).size.height * 0.25,
         contenido: FutureBuilder(
-          future: loggeaUsuario(),
+          future: loggin,
           builder: (BuildContext context, AsyncSnapshot snapshot) {
             if (snapshot.connectionState == ConnectionState.done) {
               if (snapshot.data.runtimeType == AuthResult) {
                 AuthResult result = snapshot.data;
                 PreferenciasUsuario preferencias = new PreferenciasUsuario();
                 preferencias.userID = result.user.uid;
-                Navigator.of(context).pop();
-                Navigator.of(context).pushNamed('mapa');
-                return null;
+                Future.microtask(
+                    () => Navigator.of(context).popAndPushNamed('mapa'));
+                return Container();
               } else {
                 String errormessage;
                 PlatformException error = snapshot.data;
@@ -268,10 +274,14 @@ class _LoginState extends State<Login> {
                     errormessage = "Este usuario ha sido deshabilitado.";
                     break;
                   case "ERROR_TOO_MANY_REQUESTS":
-                    errormessage = "Demasiados intentos consecutivos. Intente de nuevo en 2 minutos.";
+                    errormessage =
+                        "Demasiados intentos consecutivos. Intente de nuevo en 2 minutos.";
                     break;
                   case "ERROR_OPERATION_NOT_ALLOWED":
                     errormessage = "No está habilitado este tipo de login.";
+                    break;
+                  case "ERROR_NETWORK_REQUEST_FAILED":
+                    errormessage = "No cuenta con conexión a Internet.";
                     break;
                   default:
                     errormessage = "Error desconocido";
@@ -291,12 +301,12 @@ class _LoginState extends State<Login> {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 15.0),
-                        child: Icon(
-                          Icons.cancel,
-                          color: Colors.red[400],
-                          size: 50.0,
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.18,
+                        height: MediaQuery.of(context).size.width * 0.18,
+                        child: FlareActor(
+                          'assets/flare/error_x.flr',
+                          animation: 'error',
                         ),
                       ),
                       Text(

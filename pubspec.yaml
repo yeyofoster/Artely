@@ -25,6 +25,8 @@ dependencies:
   animations: ^1.0.0+5
   sliding_up_panel: ^1.0.2
   google_fonts: ^1.0.0
+  flare_flutter: ^2.0.3
+  flutter_svg: ^0.17.4
 
 dev_dependencies:
   flutter_test:
@@ -39,5 +41,8 @@ flutter_icons:
 
 flutter:
   assets:
-  - assets/img/curved_arrow.png
+  - assets/svg/
+  - assets/img/
+  - assets/flare/
+  - assets/icon/
   uses-material-design: true

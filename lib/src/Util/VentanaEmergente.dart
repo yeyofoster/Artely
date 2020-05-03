@@ -110,17 +110,19 @@ class VentanaEmergente {
 
   Widget getBody(BuildContext context) {
     if (this.titulo == null) {
-      return Container(
-        height: double.infinity,
-        width: double.infinity,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15.0),
-          color: this.backgroundColor,
-        ),
-        child: SingleChildScrollView(
-          child: this.contenido,
-        ),
+      return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          return Container(
+            height: constraints.maxHeight,
+            width: constraints.maxWidth,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15.0),
+              color: this.backgroundColor,
+            ),
+            child: this.contenido,
+          );
+        },
       );
     } else {
       return Positioned(

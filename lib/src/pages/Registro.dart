@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flare_flutter/flare_actor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -309,12 +310,12 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 15.0),
-                        child: Icon(
-                          Icons.check_circle,
-                          color: Colors.green[400],
-                          size: 50.0,
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.18,
+                        height: MediaQuery.of(context).size.width * 0.18,
+                        child: FlareActor(
+                          'assets/flare/check.flr',
+                          animation: 'checked',
                         ),
                       ),
                       Text(
@@ -329,7 +330,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                         child: MaterialButton(
                           color: Colors.green[400],
                           minWidth: MediaQuery.of(context).size.width * 0.6,
-                          child: Text('Continuar'),
+                          child: Text('Iniciar sesión'),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20.0),
                           ),
@@ -348,6 +349,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                   case "ERROR_EMAIL_ALREADY_IN_USE":
                     errormessage =
                         "Ya existe un usuario registrado con ese correo";
+                    break;
+                  case "ERROR_NETWORK_REQUEST_FAILED":
+                    errormessage = "No cuenta con conexión a Internet.";
                     break;
                   default:
                     errormessage = "Error desconocido. Intente más tarde";
@@ -368,12 +372,12 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 15.0),
-                        child: Icon(
-                          Icons.cancel,
-                          color: Colors.red[400],
-                          size: 50.0,
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.18,
+                        height: MediaQuery.of(context).size.width * 0.18,
+                        child: FlareActor(
+                          'assets/flare/error_x.flr',
+                          animation: 'error',
                         ),
                       ),
                       Text(
