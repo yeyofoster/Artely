@@ -13,7 +13,7 @@ import 'package:http/http.dart' as http;
 //Librerias Propias
 import 'package:prueba_maps/src/Class/BusquedaMaps.dart';
 import 'package:prueba_maps/src/Class/BusquedaRoutes.dart';
-import 'package:prueba_maps/src/Class/DecodePolyline.dart';
+import 'package:prueba_maps/src/Class/Polylines.dart';
 import 'package:prueba_maps/src/Class/PlacesMaps.dart';
 import 'package:prueba_maps/src/Class/Results.dart';
 import 'package:prueba_maps/src/Class/Routes.dart' as Rutas;
@@ -42,7 +42,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   Set<Results> lugares = Set();
   Set<Rutas.Routes> rutas = Set();
   Set<Polyline> polylinesRutas = {};
-  Widget botonesWidget;
+  Widget botonRuta;
   Widget barraSuperior;
   StreamSubscription<Position> positionStream;
   String encodedRuta = '';
@@ -57,7 +57,6 @@ class _MapaArtelyState extends State<MapaArtely> {
   void initState() {
     super.initState();
     _inicializaWidgets();
-    ubicacionInicial();
     pantallaPermisos = _verificarPermisos();
 
     final notificaciones = PushNotificationsFirebase();
@@ -76,50 +75,22 @@ class _MapaArtelyState extends State<MapaArtely> {
         if (snapshot.connectionState == ConnectionState.done) {
           if (snapshot.data.runtimeType == PermissionStatus) {
             if (_initialPosition == null) {
-              ubicacionInicial();
-              return Scaffold();
+              pantallaPermisos = _verificarPermisos();
             } else {
               return widgetPrincipal(_maxwidth, _maxheight);
             }
           } else {
-            // print('Permisos denegados: ${snapshot.data}');
             return widgetPermisos(_maxwidth);
           }
+          return Scaffold();
         } else {
-          return Center(
-            child: CircularProgressIndicator(),
+          return Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
           );
         }
       },
-    );
-  }
-
-  //Método que crea los botones flotantes y el textfield.
-  Container _crearBotones() {
-    return Container(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: <Widget>[
-          SizedBox(
-            width: 10.0,
-          ),
-          FloatingActionButton(
-            heroTag: "btn1",
-            child: Icon(Icons.stop),
-            backgroundColor: Colors.red[300],
-            onPressed: _detener,
-          ),
-          SizedBox(
-            width: 10.0,
-          ),
-          FloatingActionButton(
-            heroTag: 'btn2',
-            child: Icon(Icons.my_location),
-            backgroundColor: Colors.black45,
-            onPressed: _ubicarme,
-          ),
-        ],
-      ),
     );
   }
 
@@ -129,11 +100,18 @@ class _MapaArtelyState extends State<MapaArtely> {
       PermissionStatus status = await _permissionHandler
           .checkPermissionStatus(PermissionGroup.locationWhenInUse);
       if (status == PermissionStatus.denied) {
-        setState(() {});
+        // setState(() {});
         return await _permissionHandler
             .requestPermissions([PermissionGroup.locationWhenInUse]);
       } else if (status == PermissionStatus.granted) {
-        setState(() {});
+        Position pos = await Geolocator()
+            .getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
+        setState(() {
+          _initialPosition = CameraPosition(
+            target: LatLng(pos.latitude, pos.longitude),
+            zoom: 16.0,
+          );
+        });
         return status;
       }
     } catch (errorPermisos) {
@@ -145,15 +123,28 @@ class _MapaArtelyState extends State<MapaArtely> {
   void _ubicarmeMarcador() async {
     Position position = await Geolocator()
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
+
+    List<Placemark> listaUbicacion =
+        await Geolocator().placemarkFromCoordinates(
+      position.latitude,
+      position.longitude,
+      localeIdentifier: 'es_MX',
+    );
+    String pos;
+
+    if (listaUbicacion.first.thoroughfare == '' &&
+        listaUbicacion.first.subThoroughfare == '') {
+      pos = listaUbicacion.first.subLocality +
+          ', ' +
+          listaUbicacion.first.locality;
+    } else {
+      pos = listaUbicacion.first.thoroughfare +
+          ' ' +
+          listaUbicacion.first.subThoroughfare;
+    }
+
     _moverConZoom(position, 16.0);
-
     setState(() {
-      String pos = 'Lat: ' +
-          position.latitude.toString() +
-          'Lng: ' +
-          position.longitude.toString();
-      print(pos);
-
       marcadores.add(
         Marker(
           markerId: MarkerId('Mi ubicacion'),
@@ -168,7 +159,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   void _ubicarme() async {
     Position position = await Geolocator()
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
-    _moverConZoom(position, 16.0);
+    _moverConZoom(position, enViaje ? 17.0 : 16.0);
   }
 
   //Método que detiene la detección de la ubicación del dispositivo.
@@ -176,7 +167,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     setState(() {
       marcadores.clear();
       polylinesRutas.clear();
-      botonesWidget = SizedBox();
+      botonRuta = SizedBox();
       barraSuperior = cargaBarraSuperior();
       encodedRuta = '';
       datosViaje = Viaje();
@@ -219,7 +210,7 @@ class _MapaArtelyState extends State<MapaArtely> {
           false, //Quita los botones de naavegación cuando se presiona un marcador.
       onTap: (puntoLatLng) {
         FocusScope.of(context).unfocus();
-        if (polylinesRutas.isEmpty) {
+        if (polylinesRutas.isEmpty && marcadores.length < 2) {
           setState(() {
             _detener();
           });
@@ -260,7 +251,7 @@ class _MapaArtelyState extends State<MapaArtely> {
             rutas.clear();
             polylinesRutas.clear();
             marcadores.clear();
-            botonesWidget = SizedBox();
+            botonRuta = SizedBox();
             _ubicarme();
           });
           return null;
@@ -301,7 +292,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     PlacesMaps placesMaps = PlacesMaps.fromJson(jsonDecode(res.body));
     setState(() {
       if (marcadores.length == 2 && polylinesRutas.isNotEmpty) {
-        botonesWidget = SizedBox();
+        botonRuta = SizedBox();
         polylinesRutas.clear();
         List oldMarkers = marcadores.toList();
         oldMarkers.removeLast();
@@ -382,37 +373,6 @@ class _MapaArtelyState extends State<MapaArtely> {
           );
         } else {
           return Container();
-          // return Container(
-          //     decoration: BoxDecoration(
-          //       border: Border.all(color: Colors.blue),
-          //       color: Color.fromRGBO(255, 255, 255, 0.9),
-          //       borderRadius: BorderRadius.vertical(
-          //         top: Radius.circular(10.0),
-          //         bottom: Radius.circular(25.0),
-          //       ),
-          //     ),
-          //     width: MediaQuery.of(context).size.width * 0.93,
-          //     height: MediaQuery.of(context).size.height * 0.30,
-          //     child: Column(
-          //       mainAxisAlignment: MainAxisAlignment.center,
-          //       children: <Widget>[
-          //         Text(
-          //           'No se han encontrado resultados :(',
-          //           style: TextStyle(
-          //               fontSize: 18.0,
-          //               color: Colors.blueGrey,
-          //               fontWeight: FontWeight.w500),
-          //         ),
-          //         SizedBox(
-          //           height: 10.0,
-          //         ),
-          //         Icon(
-          //           Icons.cancel,
-          //           color: Colors.red,
-          //           size: 70.0,
-          //         ),
-          //       ],
-          //     ));
         }
       },
     );
@@ -450,7 +410,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   Widget _botonRuta() {
     if (marcadores.length >= 2) {
       setState(() {
-        botonesWidget = Container(
+        botonRuta = Container(
           key: ValueKey('Seleccion tipo viaje'),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -492,13 +452,13 @@ class _MapaArtelyState extends State<MapaArtely> {
     }
     return AnimatedSwitcher(
       duration: Duration(milliseconds: 300),
-      child: botonesWidget,
+      child: botonRuta,
     );
   }
 
   void generarRuta(String modo) async {
     BusquedaRoutes busqueda = BusquedaRoutes();
-    int rutaSeleccionada = 1;
+    int rutaSeleccionada = 0;
 
     String origen =
         '${marcadores.elementAt(0).position.latitude},${marcadores.elementAt(0).position.longitude}';
@@ -509,11 +469,11 @@ class _MapaArtelyState extends State<MapaArtely> {
     busqueda.destino = destino;
     busqueda.modo = modo;
     http.Response res = await http.get(busqueda.urlRoutes);
-    //debugPrint(res.body);
+    // debugPrint(res.body);
     RoutesMaps response = RoutesMaps.fromJson(jsonDecode(res.body));
 
     setState(() {
-      botonesWidget = Container(
+      botonRuta = Container(
         key: ValueKey('Selecciona ruta'),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -523,13 +483,22 @@ class _MapaArtelyState extends State<MapaArtely> {
               child: FlatButton.icon(
                 onPressed: () {
                   print('Ruta seleccionada = $rutaSeleccionada');
-                  if (rutaSeleccionada == 1) {
-                    seleccionaRuta(rutaSeleccionada - 1, response.routes);
+                  if (rutaSeleccionada == 0) {
+                    seleccionaRuta(rutaSeleccionada, response.routes);
                   }
-                  iniciarViaje(response.routes.elementAt(rutaSeleccionada - 1));
+                  if (rutaSeleccionada == 10) {
+                    iniciarAprendizajeRuta();
+                    //
+                  } else {
+                    datosViaje.updateViaje(marcadores, tipo,
+                        response.routes.elementAt(rutaSeleccionada));
+                    iniciarViaje();
+                  }
                 },
-                color: coloresRuta.elementAt(rutaSeleccionada - 1),
-                icon: Icon(Icons.play_arrow),
+                color: Colors.cyan[600],
+                icon: Icon(
+                  Icons.play_arrow,
+                ),
                 label: Text(
                   '¡Vamos!',
                   style: TextStyle(
@@ -560,51 +529,87 @@ class _MapaArtelyState extends State<MapaArtely> {
                   padding: EdgeInsets.all(2.0),
                   icon: Icon(
                     Icons.arrow_drop_up,
-                    color: coloresRuta.elementAt(rutaSeleccionada - 1),
+                    color: Colors.cyan,
                     size: 35.0,
                   ),
-                  onSelected: (selecionado) {
-                    setState(() {
-                      rutaSeleccionada = selecionado;
-                    });
-                    print(rutaSeleccionada);
-                    seleccionaRuta(rutaSeleccionada - 1, response.routes);
+                  onSelected: (seleccionado) {
+                    if (seleccionado == 10) {
+                      //Código de aprendizaje de ruta
+                      print('Aprendizaje ruta');
+                      setState(() {
+                        rutaSeleccionada = seleccionado;
+                        datosViaje.updateViaje(
+                            marcadores, tipo, response.routes.last,
+                            aprender: true);
+                        print(datosViaje.toString());
+                        polylinesRutas.clear();
+                      });
+                      print(rutaSeleccionada);
+                    } else {
+                      setState(() {
+                        rutaSeleccionada = seleccionado;
+                        datosViaje.updateViaje(marcadores, tipo,
+                            response.routes.elementAt(rutaSeleccionada));
+                        print(datosViaje.toString());
+                      });
+                      print(rutaSeleccionada);
+                      seleccionaRuta(rutaSeleccionada, response.routes);
+                    }
                   },
                   itemBuilder: (BuildContext context) {
                     int numRuta = 0;
                     List<PopupMenuEntry> opciones = <PopupMenuEntry>[];
-                    response.routes.forEach((ruta) {
-                      numRuta++;
-                      opciones.add(
-                        PopupMenuItem(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Text(
-                                'Ruta $numRuta',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: coloresRuta.elementAt(numRuta - 1),
+                    response.routes.forEach(
+                      (ruta) {
+                        numRuta++;
+                        opciones.add(
+                          PopupMenuItem(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Text(
+                                  'Ruta $numRuta',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: coloresRuta.elementAt(numRuta - 1),
+                                  ),
+                                  textAlign: TextAlign.start,
                                 ),
-                                textAlign: TextAlign.start,
-                              ),
-                              Text(
-                                'Tiempo aproximado: ${ruta.legs.elementAt(0).duration.text}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black54,
+                                Text(
+                                  'Tiempo aproximado: ${ruta.legs.elementAt(0).duration.text}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black54,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            value: numRuta - 1,
                           ),
-                          value: numRuta,
+                        );
+                        if (numRuta < response.routes.length) {
+                          opciones.add(PopupMenuDivider());
+                        }
+                      },
+                    );
+                    opciones.add(PopupMenuDivider());
+                    opciones.add(
+                      PopupMenuItem(
+                        value: 10,
+                        child: Container(
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Aprender nueva ruta ${tipo == 1 ? 'en auto' : 'a pie'}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue[900],
+                            ),
+                            textAlign: TextAlign.start,
+                          ),
                         ),
-                      );
-                      if (numRuta < response.routes.length) {
-                        opciones.add(PopupMenuDivider());
-                      }
-                    });
+                      ),
+                    );
                     return opciones;
                   }),
             ),
@@ -617,11 +622,11 @@ class _MapaArtelyState extends State<MapaArtely> {
       (routes) {
         List<LatLng> coordenadasPolilyne =
             decodeEncodedPolyline(routes.overviewPolyline.points);
-        PolylineId idRuta = PolylineId('Ruta $rutaSeleccionada');
+        PolylineId idRuta = PolylineId('Ruta ${rutaSeleccionada + 1}');
         setState(() {
           Polyline temppoly = Polyline(
               polylineId: idRuta,
-              color: coloresRuta.elementAt(rutaSeleccionada - 1),
+              color: coloresRuta.elementAt(rutaSeleccionada),
               width: 5,
               points: coordenadasPolilyne,
               startCap: Cap.roundCap,
@@ -700,17 +705,98 @@ class _MapaArtelyState extends State<MapaArtely> {
 
   void _inicializaWidgets() {
     setState(() {
-      botonesWidget = SizedBox();
+      botonRuta = SizedBox();
       barraSuperior = cargaBarraSuperior();
     });
   }
 
-  void iniciarViaje(Rutas.Routes datosRuta) {
+  //Método que inicia un viaje del que se aprenderá la ruta.
+  void iniciarAprendizajeRuta() {
     setState(() async {
-      botonesWidget =
+      botonRuta = SizedBox();
+      enViaje = true;
+
+      Geolocator geolocator = Geolocator();
+      LocationOptions locationOptions = LocationOptions(
+        accuracy: LocationAccuracy.best,
+        timeInterval: 5000,
+      );
+      List<LatLng> coordenadasPolilyne = [];
+
+      Position inicio = await Geolocator()
+          .getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
+
+      coordenadasPolilyne.add(LatLng(inicio.latitude, inicio.longitude));
+
+      PolylineId idRuta =
+          PolylineId('Ruta ${datosViaje.origen + ' - ' + datosViaje.destino}');
+
+      Polyline temppoly = Polyline(
+        polylineId: idRuta,
+        color: Colors.cyan,
+        width: 5,
+        points: coordenadasPolilyne,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+      );
+      polylinesRutas.add(temppoly);
+
+      try {
+        Position anterior = Position(
+          latitude: inicio.latitude,
+          longitude: inicio.longitude,
+        );
+        double distancia = 0.0;
+
+        positionStream = geolocator.getPositionStream(locationOptions).listen(
+          (Position actual) async {
+            if (actual == null) {
+              print('Error al obtener la ubicación');
+            } else {
+              datosViaje.pactual = actual;
+              datosViaje.updateDistancia();
+
+              distancia = await Geolocator().distanceBetween(anterior.latitude,
+                  anterior.longitude, actual.latitude, actual.longitude);
+              // print('Distancia: $distancia metros');
+
+              if (distancia > 10.0) {
+                // print('Agregando nuevo punto a la lista.');
+                coordenadasPolilyne
+                    .add(LatLng(actual.latitude, actual.longitude));
+
+                Polyline temppoly = Polyline(
+                  polylineId: idRuta,
+                  color: Colors.cyan,
+                  width: 5,
+                  points: coordenadasPolilyne,
+                  startCap: Cap.roundCap,
+                  endCap: Cap.roundCap,
+                );
+                polylinesRutas.clear();
+                polylinesRutas.add(temppoly);
+
+                anterior = actual;
+              }
+              _moverConZoom(actual, 17.0);
+            }
+          },
+        );
+      } catch (error) {
+        print('Error en aprendizaje de ruta: $error');
+      }
+    });
+  }
+
+  //Método que inicia el viaje.
+  void iniciarViaje() {
+    setState(() async {
+      botonRuta =
           SizedBox(); //Se actualiza el widget para quitar el botón de selección de ruta.
-      enViaje =
-          true; //Pasamos a true el valor de 'enViaje' para mandarlo a Firestore y modificar la interfáz de viaje.
+
+      //Solicitamos la ubicación actual del dispositivo.
+      Position inicio = await Geolocator()
+          .getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
 
       /*
       Se crean 2 referencias del documento que vamos a actualizar.
@@ -723,17 +809,9 @@ class _MapaArtelyState extends State<MapaArtely> {
           .collection('Artely_BD')
           .document(preferencias.userID);
 
-      //Solicitamos la ubicación actual del dispositivo.
-      Position inicio = await Geolocator()
-          .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      enViaje =
+          true; //Pasamos a true el valor de 'enViaje' para mandarlo a Firestore y modificar la interfáz de viaje.
 
-      datosViaje.minutos = datosRuta.legs.first.duration.text
-          .substring(0, datosRuta.legs.first.duration.text.length - 3);
-      datosViaje.origen = datosRuta.legs.first.startAddress;
-      datosViaje.destino = datosRuta.legs.first.endAddress;
-      datosViaje.tipo = tipo;
-
-      print(datosViaje.toString());
       _moverConZoom(inicio, 17.0);
 
       //Creamos el map con los valores de inicio del viaje.
@@ -782,6 +860,9 @@ class _MapaArtelyState extends State<MapaArtely> {
             } else {
               datosMapViaje['PActual'] =
                   new GeoPoint(position.latitude, position.longitude);
+
+              datosViaje.pactual = position;
+              datosViaje.updateDistancia();
 
               print(
                   'Lat: ${position.latitude} Lng: ${position.longitude} Tiempo: ${position.timestamp}');
@@ -946,34 +1027,6 @@ class _MapaArtelyState extends State<MapaArtely> {
     );
   }
 
-  //Método que regresa el SlideUpPanel con los datos del viaje.
-  Widget slideUpViaje(double maxheight, double maxwidth) {
-    List<String> datosOrigen = datosViaje.origen.split(',');
-    List<String> datosDestino = datosViaje.destino.split(',');
-    return SlidingUpPanel(
-      color: Color.fromRGBO(255, 255, 255, 0.90),
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(25.0),
-        topRight: Radius.circular(25.0),
-      ),
-      maxHeight: maxheight * 0.22,
-      minHeight: maxheight * 0.1,
-      collapsed: Container(
-        alignment: Alignment.center,
-        padding: EdgeInsets.symmetric(horizontal: maxwidth * 0.04),
-        decoration: BoxDecoration(
-          // color: Colors.yellow[300],
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(25.0),
-            topRight: Radius.circular(25.0),
-          ),
-        ),
-        child: slideUpCollapsed(maxwidth, maxheight, datosOrigen, datosDestino),
-      ),
-      panel: slideUpPanel(maxwidth, maxheight, datosOrigen, datosDestino),
-    );
-  }
-
   //Método que regresa todos los componentes de la pagina principal MapaArtely.
   Widget widgetPrincipal(double maxwidth, double maxheight) {
     return SafeArea(
@@ -1056,46 +1109,59 @@ class _MapaArtelyState extends State<MapaArtely> {
                 child: _creaMapa(),
               ),
               Positioned(
-                width: maxwidth,
-                height: maxheight * 0.10,
-                top: enViaje ? maxheight * 0.75 : maxheight * 0.84,
-                right: maxwidth * 0.03,
-                //child: Container(color: Colors.cyan,),
-                child: _crearBotones(),
+                top: enViaje ? maxheight * 0.76 : maxheight * 0.86,
+                right: maxwidth * 0.02,
+                child: MaterialButton(
+                  child: Icon(Icons.my_location,
+                      color: Colors.white.withOpacity(0.9)),
+                  color: Colors.black45,
+                  shape: CircleBorder(),
+                  padding: EdgeInsets.all(14.0),
+                  elevation: 5.0,
+                  onPressed: _ubicarme,
+                ),
+                // child: FloatingActionButton(
+                //   child: Icon(Icons.my_location),
+                //   backgroundColor: Colors.black45,
+                //   tooltip: 'Ubicarme',
+                //   onPressed: _ubicarme,
+                // ),
               ),
               Positioned(
                 width: maxwidth * 0.93,
                 top: maxheight * 0.05,
                 left: maxwidth * 0.03,
-                child: Column(
-                  children: <Widget>[
-                    AnimatedSwitcher(
-                      duration: Duration(milliseconds: 400),
-                      child: barraSuperior,
-                      transitionBuilder:
-                          (Widget child, Animation<double> animation) {
-                        return SlideTransition(
-                          position: Tween<Offset>(
-                            begin: Offset(5.0, 0.0),
-                            end: Offset(0.0, 0.0),
-                          ).animate(animation),
-                          child: child,
-                        );
-                      },
-                    ),
-                    SizedBox(
-                      height: 5.0,
-                    ),
-                    _listaResult(),
-                  ],
-                ),
+                child: enViaje
+                    ? Container()
+                    : Column(
+                        children: <Widget>[
+                          AnimatedSwitcher(
+                            duration: Duration(milliseconds: 400),
+                            child: barraSuperior,
+                            transitionBuilder:
+                                (Widget child, Animation<double> animation) {
+                              return SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: Offset(5.0, 0.0),
+                                  end: Offset(0.0, 0.0),
+                                ).animate(animation),
+                                child: child,
+                              );
+                            },
+                          ),
+                          SizedBox(
+                            height: 5.0,
+                          ),
+                          _listaResult(),
+                        ],
+                      ),
               ),
               Positioned(
                 top: maxheight * 0.85,
                 left: maxwidth * 0.07,
                 child: AnimatedSwitcher(
                   duration: Duration(milliseconds: 500),
-                  child: botonesWidget,
+                  child: botonRuta,
                 ),
               ),
               AnimatedSwitcher(
@@ -1151,124 +1217,207 @@ class _MapaArtelyState extends State<MapaArtely> {
     );
   }
 
-  //Método que obtiene la ubicación actual del dispositivo y actualiza la posición inicial del mapa.
-  Future<void> ubicacionInicial() async {
-    try {
-      Position pos = await Geolocator()
-          .getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
-      setState(() {
-        _initialPosition = CameraPosition(
-          target: LatLng(pos.latitude, pos.longitude),
-          zoom: 16.0,
-        );
-      });
-    } catch (e) {
-      print('Error, no se pudo ubicar: $e');
-    }
-  }
-
-  //Método que regresa el widget que se muestra cuando el SLideUpPanel está colapsado.
-  Widget slideUpCollapsed(double maxwidth, double maxheight,
-      List<String> datosOrigen, List<String> datosDestino) {
-    return Row(
-      children: <Widget>[
-        Container(
-          child: Icon(
-            datosViaje.tipo == 1 ? Icons.directions_car : Icons.directions_walk,
-            size: maxheight * 0.045,
-          ),
-        ),
-        SizedBox(
-          width: maxwidth * 0.03,
-        ),
-        Expanded(
-          child: Wrap(
-            direction: Axis.horizontal,
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              Container(
-                alignment: Alignment.topCenter,
-                padding: EdgeInsets.only(
-                  bottom: 10.0,
-                ),
-                child: Text(
-                  'Viaje en curso',
-                  style: GoogleFonts.roboto(
-                      fontWeight: FontWeight.w700, fontSize: 18.0),
-                ),
-              ),
-              Container(
-                color: Colors.blue[100],
-                child: Text(
-                  datosOrigen.first,
-                  style: GoogleFonts.roboto(
-                    fontSize: 16.0,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward,
-                color: Colors.grey[600],
-                size: 20.0,
-              ),
-              Container(
-                color: Colors.blue[100],
-                child: Text(
-                  datosDestino.first,
-                  style: GoogleFonts.roboto(
-                    fontSize: 16.0,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          width: maxwidth * 0.03,
-        ),
-        Container(
-          padding: EdgeInsets.all(8.0),
-          child: Wrap(
-            alignment: WrapAlignment.end,
-            direction: Axis.vertical,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              Text(
-                'Tiempo',
-                style: GoogleFonts.openSans(
-                  color: Colors.grey[600],
-                ),
-              ),
-              Text(
-                datosViaje.minutos,
-                style: GoogleFonts.openSans(
-                  fontSize: 18.0,
-                  color: Colors.grey[600],
-                ),
-              ),
-              Text(
-                'min',
-                style: GoogleFonts.openSans(
-                  fontSize: 12.0,
-                  color: Colors.grey[600],
-                ),
-              )
-            ],
-          ),
-        ),
-      ],
+  //Método que regresa el SlideUpPanel con los datos del viaje.
+  Widget slideUpViaje(double maxheight, double maxwidth) {
+    // print(datosViaje.origen);
+    // print(datosViaje.destino);
+    return SlidingUpPanel(
+      color: Color.fromRGBO(255, 255, 255, 0.90),
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(25.0),
+        topRight: Radius.circular(25.0),
+      ),
+      maxHeight: maxheight * 0.26,
+      minHeight: maxheight * 0.1,
+      panel: slideUpPanel(maxwidth, maxheight),
     );
   }
 
   //Método que regresa el widget que se muestra cuando el SLideUpPanel está en panel.
-  Widget slideUpPanel(double maxwidth, double maxheight,
-      List<String> datosOrigen, List<String> datosDestino) {
-    return Container(
-      alignment: Alignment.center,
-      child: Text('Datos viaje'),
+  Widget slideUpPanel(double maxwidth, double maxheight) {
+    return Column(
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Container(
+                padding: EdgeInsets.only(left: maxwidth * 0.01),
+                child: (() {
+                  if (datosViaje.tipo == 1) {
+                    return Icon(
+                      Icons.directions_car,
+                      size: maxheight * 0.045,
+                    );
+                  } else if (datosViaje.tipo == 2) {
+                    return Icon(
+                      Icons.directions_walk,
+                      size: maxheight * 0.045,
+                    );
+                  } else {
+                    return Container();
+                  }
+                }())),
+            SizedBox(
+              width: maxwidth * 0.03,
+            ),
+            Expanded(
+              child: Wrap(
+                direction: Axis.horizontal,
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  Container(
+                    alignment: Alignment.topCenter,
+                    padding: EdgeInsets.only(
+                      bottom: 10.0,
+                    ),
+                    child: Text(
+                      'Viaje en curso',
+                      style: GoogleFonts.roboto(
+                          fontWeight: FontWeight.w700, fontSize: 18.0),
+                    ),
+                  ),
+                  Text(
+                    datosViaje.origen,
+                    style: GoogleFonts.roboto(
+                      fontSize: 16.0,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward,
+                    color: Colors.grey[600],
+                    size: 20.0,
+                  ),
+                  Text(
+                    datosViaje.destino,
+                    style: GoogleFonts.roboto(
+                      fontSize: 16.0,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: maxwidth * 0.03,
+            ),
+            Container(
+              padding: EdgeInsets.all(8.0),
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                direction: Axis.vertical,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  Text(
+                    'Tiempo',
+                    style: GoogleFonts.openSans(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  Text(
+                    datosViaje.minutos,
+                    style: GoogleFonts.openSans(
+                      fontSize: 18.0,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  Text(
+                    'min',
+                    style: GoogleFonts.openSans(
+                      fontSize: 12.0,
+                      color: Colors.grey[600],
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ],
+        ),
+        Expanded(
+          child: Container(
+            // color: Colors.pink[200],
+            alignment: Alignment.topCenter,
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Column(
+              // crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Inicio: ${datosViaje.horaInicio}',
+                  style: GoogleFonts.roboto(
+                    fontSize: 16.0,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                Text(
+                  'Llegada estimada: ${datosViaje.horaLlegada}',
+                  style: GoogleFonts.roboto(
+                    fontSize: 16.0,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                SizedBox(
+                  height: maxheight * 0.01,
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    MaterialButton(
+                      color: Colors.blue[400],
+                      minWidth: maxwidth * 0.3,
+                      height: 40.0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20.0)),
+                      child: Text('¡Llegué!'),
+                      onPressed: datosViaje.distanciaLlegada > 70.0
+                          ? null
+                          : _finalizarViaje,
+                    ),
+                    SizedBox(
+                      width: maxwidth * 0.08,
+                    ),
+                    MaterialButton(
+                      color: Colors.red[400],
+                      minWidth: maxwidth * 0.3,
+                      height: 40.0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20.0)),
+                      child: Text('Cancelar'),
+                      onPressed: _detener,
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        )
+      ],
     );
+  }
+
+  void _finalizarViaje() {
+    if (datosViaje.aprendizaje) {
+      Polyline ruta = polylinesRutas.first;
+      String encodedPoints = encodePolylineFromPoints(ruta.points, 5);
+
+      Map<String, dynamic> datosRuta = {
+        'POrigen': new GeoPoint(marcadores.elementAt(0).position.latitude,
+            marcadores.elementAt(0).position.longitude),
+        'PDestino': new GeoPoint(marcadores.elementAt(1).position.latitude,
+            marcadores.elementAt(1).position.longitude),
+        'Encoded_Polyline': encodedPoints,
+        'Tipo': tipo,
+      };
+
+      Firestore.instance
+          .collection('Artely_BD')
+          .document(preferencias.userID)
+          .collection('Rutas')
+          .document()
+          .setData(datosRuta);
+
+      _detener();
+    } else {
+      print('Viaje normal');
+    }
   }
 }

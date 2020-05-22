@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:prueba_maps/src/Class/HistorialViaje.dart';
 import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
 
 class PantallaViajes extends StatefulWidget {
@@ -8,9 +10,8 @@ class PantallaViajes extends StatefulWidget {
 }
 
 class _PantallaViajesState extends State<PantallaViajes> {
-  Future<QuerySnapshot> _getViajes;
+  Future<List<HistorialViaje>> _getViajes;
   PreferenciasUsuario _preferenciasUsuario;
-  List viajes = [];
 
   @override
   void initState() {
@@ -23,7 +24,7 @@ class _PantallaViajesState extends State<PantallaViajes> {
     return SafeArea(
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Mis rutas'),
+          title: Text('Mis viajes'),
         ),
         body: RefreshIndicator(
           child: listaViajes(),
@@ -36,20 +37,72 @@ class _PantallaViajesState extends State<PantallaViajes> {
   Widget listaViajes() {
     return FutureBuilder(
       future: _getViajes,
-      builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+      builder: (BuildContext context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          QuerySnapshot query = snapshot.data;
-          if (query.documents.length > 0) {
+          List<HistorialViaje> viajes = snapshot.data;
+          if (viajes.length > 0) {
             return ListView.builder(
-              itemCount: query.documents.length,
+              itemCount: viajes.length,
               itemBuilder: (BuildContext context, int index) {
-                query.documents.forEach(
-                  (doc) {
-                    // viajes.add(doc.data['POrigen']);
-                  },
-                );
+                String fechaInicio = viajes.elementAt(index).inicio;
+                String horaInicio = fechaInicio.substring(
+                    fechaInicio.length - 5, fechaInicio.length);
+                fechaInicio = fechaInicio.substring(0, fechaInicio.length - 5);
+
+                String fechaLlegada = viajes.elementAt(index).llegada;
+                String horaLlegada = fechaLlegada.substring(
+                    fechaLlegada.length - 5, fechaLlegada.length);
+                fechaLlegada =
+                    fechaLlegada.substring(0, fechaLlegada.length - 5);
+
                 return Card(
-                  child: Text('Viaje ${index + 1}'),
+                  elevation: 3.0,
+                  child: ListTile(
+                      title: Text(
+                        fechaInicio,
+                        style: GoogleFonts.roboto(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18.0,
+                        ),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 5.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                                '${viajes.elementAt(index).origen.direccion} a las $horaInicio'),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 100.0),
+                              child: Icon(Icons.arrow_downward),
+                            ),
+                            Text(
+                                '${viajes.elementAt(index).destino.direccion} a las $horaLlegada'),
+                          ],
+                        ),
+                      ),
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.transparent,
+                        child: viajes.elementAt(index).tipo == 1
+                            ? Icon(
+                                Icons.directions_car,
+                                size: 28.0,
+                                color: Colors.cyan,
+                              )
+                            : Icon(
+                                Icons.directions_walk,
+                                size: 28.0,
+                                color: Colors.cyan,
+                              ),
+                      ),
+                      contentPadding: EdgeInsets.only(
+                        top: 0.0,
+                        bottom: 7.5,
+                        left: 10.0,
+                        right: 15.0,
+                      ),
+                      onTap: () {}),
                 );
               },
             );
@@ -60,7 +113,7 @@ class _PantallaViajesState extends State<PantallaViajes> {
                   height: MediaQuery.of(context).size.height * 0.42,
                 ),
                 Center(
-                  child: Text('Aún no hay nada'),
+                  child: Text('Aún no has realizado ningún viaje'),
                 ),
               ],
             );
@@ -74,12 +127,23 @@ class _PantallaViajesState extends State<PantallaViajes> {
     );
   }
 
-  Future<QuerySnapshot> refreshViajes() async {
+  Future<List<HistorialViaje>> refreshViajes() async {
     setState(() {});
-    return await Firestore.instance
+    print('Ejecutando update');
+    QuerySnapshot res = await Firestore.instance
         .collection('Artely_BD')
         .document(_preferenciasUsuario.userID)
         .collection('Viajes')
         .getDocuments();
+    List<DocumentSnapshot> documentos = res.documents;
+    List<HistorialViaje> listaViajes = [];
+    for (var doc in documentos) {
+      HistorialViaje viaje = HistorialViaje.fromJson(doc.data);
+      await viaje.origen.positionToAddress();
+      await viaje.destino.positionToAddress();
+      listaViajes.add(viaje);
+      // print(viaje.toString());
+    }
+    return listaViajes;
   }
 }

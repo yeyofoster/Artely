@@ -4,6 +4,7 @@ import 'package:flare_flutter/flare_actor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:prueba_maps/src/Class/ArtelyColors.dart';
 import 'package:prueba_maps/src/Util/VentanaEmergente.dart';
 
 class PantallaRegistro extends StatefulWidget {
@@ -33,65 +34,86 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   Widget build(BuildContext context) {
     double _maxHeight = MediaQuery.of(context).size.height;
     double _maxWidth = MediaQuery.of(context).size.width;
-    return SafeArea(
-      child: Scaffold(
-        body: GestureDetector(
-          onTap: () {
-            FocusScope.of(context).unfocus();
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                  colors: [
-                    Colors.blue[200],
-                    Colors.blue[50],
-                  ],
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  stops: [0.1, 0.6],
-                  tileMode: TileMode.clamp),
-            ),
-            width: _maxWidth,
-            height: _maxHeight,
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  top: _maxHeight * 0.15,
-                  bottom: _maxHeight * 0.02,
-                  left: _maxWidth * 0.05,
-                  right: _maxWidth * 0.05,
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: <Widget>[
-                      _txtNombre(),
-                      SizedBox(
-                        height: _maxHeight * 0.03,
-                      ),
-                      _txApellido(),
-                      SizedBox(
-                        height: _maxHeight * 0.035,
-                      ),
-                      _txtCorreo(),
-                      SizedBox(
-                        height: _maxHeight * 0.035,
-                      ),
-                      _txtTelefono(),
-                      SizedBox(
-                        height: _maxHeight * 0.035,
-                      ),
-                      _txtContrasenia(),
-                      SizedBox(
-                        height: _maxHeight * 0.065,
-                      ),
-                      _botonFormulario(),
-                    ],
-                  ),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: SingleChildScrollView(
+          child: Stack(
+            children: <Widget>[
+              Center(
+                child: Image.asset(
+                  'assets/img/background.png',
+                  height: _maxHeight,
+                  width: _maxWidth,
+                  fit: BoxFit.fill,
                 ),
               ),
-            ),
+              Positioned(
+                top: _maxHeight * 0.15,
+                left: _maxWidth * 0.07,
+                child: Text(
+                  'Registro',
+                  style: GoogleFonts.montserrat(
+                      fontSize: 34, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Positioned(
+                top: _maxHeight * 0.22,
+                child: Container(
+                  width: _maxWidth,
+                  child: _getFormulario(_maxHeight, _maxWidth),
+                ),
+              ),
+              // Positioned(
+              //   top: _alturaBoton,
+              //   left: _maxWidth * 0.2,
+              //   child: Container(
+              //     width: _maxWidth * 0.6,
+              //     child: _botonFormulario(),
+              //   ),
+              // ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _getFormulario(double _maxHeight, double _maxWidth) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        vertical: _maxHeight * 0.01,
+        horizontal: _maxWidth * 0.09,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: <Widget>[
+            _txtNombre(),
+            SizedBox(
+              height: _maxHeight * 0.02,
+            ),
+            _txApellido(),
+            SizedBox(
+              height: _maxHeight * 0.02,
+            ),
+            _txtCorreo(),
+            SizedBox(
+              height: _maxHeight * 0.02,
+            ),
+            _txtTelefono(),
+            SizedBox(
+              height: _maxHeight * 0.02,
+            ),
+            _txtContrasenia(),
+            SizedBox(
+              height: _maxHeight * 0.05,
+            ),
+            _botonFormulario(),
+          ],
         ),
       ),
     );
@@ -109,9 +131,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       },
       textCapitalization: TextCapitalization.words,
       decoration: InputDecoration(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
+        // border: OutlineInputBorder(
+        //   borderRadius: BorderRadius.circular(20.0),
+        // ),
         hintText: 'Nombre',
         contentPadding: EdgeInsets.symmetric(
           horizontal: 15.0,
@@ -137,9 +159,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         return null;
       },
       decoration: InputDecoration(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
+        // border: OutlineInputBorder(
+        //   borderRadius: BorderRadius.circular(20.0),
+        // ),
         hintText: 'Primer Apellido',
         contentPadding: EdgeInsets.symmetric(
           horizontal: 15.0,
@@ -171,9 +193,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         return 'El correo no tiene un formato valido';
       },
       decoration: InputDecoration(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
+        // border: OutlineInputBorder(
+        //   borderRadius: BorderRadius.circular(20.0),
+        // ),
         hintText: 'Correo electrónico',
         contentPadding: EdgeInsets.symmetric(
           horizontal: 15.0,
@@ -193,16 +215,16 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
       controller: _telController,
       validator: (input) {
         if (input.isEmpty) {
-          return 'Falta este campo';
+          _telController.text = '0';
         }
         return null;
       },
       keyboardType: TextInputType.phone,
       decoration: InputDecoration(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        hintText: 'Teléfono',
+        // border: OutlineInputBorder(
+        //   borderRadius: BorderRadius.circular(20.0),
+        // ),
+        hintText: 'Teléfono (Opcional)',
         contentPadding: EdgeInsets.symmetric(
           horizontal: 15.0,
           vertical: 20.0,
@@ -237,9 +259,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         return 'Se necesita al menos un caracter especial, \nmayuscula, numero y minuscula en la contraseña';
       },
       decoration: InputDecoration(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
+        // border: OutlineInputBorder(
+        //   borderRadius: BorderRadius.circular(20.0),
+        // ),
         hintText: 'Contraseña',
         contentPadding: EdgeInsets.symmetric(
           horizontal: 15.0,
@@ -269,10 +291,10 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   //Método que regresa el botón del formulario.
   Widget _botonFormulario() {
     return Container(
-      width: MediaQuery.of(context).size.width * 0.90,
+      width: MediaQuery.of(context).size.width * 0.6,
       child: FlatButton(
         padding: EdgeInsets.symmetric(vertical: 15.0),
-        color: Colors.blueAccent[100],
+        color: ArtelyColors.darkSeaGreen,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadiusDirectional.circular(20.0),
         ),

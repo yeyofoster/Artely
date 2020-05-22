@@ -27,6 +27,7 @@ dependencies:
   google_fonts: ^1.0.0
   flare_flutter: ^2.0.3
   flutter_svg: ^0.17.4
+  intl: ^0.16.0
 
 dev_dependencies:
   flutter_test:

@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:prueba_maps/src/Class/ArtelyColors.dart';
 import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
 import 'package:prueba_maps/src/Util/VentanaEmergente.dart';
 
@@ -31,58 +32,64 @@ class _LoginState extends State<Login> {
   Widget build(BuildContext context) {
     final maxWidth = MediaQuery.of(context).size.width;
     final maxHeight = MediaQuery.of(context).size.height;
-    return SafeArea(
-      child: Scaffold(
-        body: GestureDetector(
-          onTap: () {
-            FocusScope.of(context).unfocus();
-          },
-          // child: Stack(
-          //   children: <Widget>[
-          //     Container(
-          //       width: maxWidth,
-          //       height: maxHeight,
-          //       color: Colors.blue,
-          //       child: SvgPicture.asset(
-          //         'assets/svg/artely_back.svg',
-          //         fit: BoxFit.fill,
-          //       ),
-          //     ),
-          //   ],
-          // ),
-          child: Container(
-            width: maxWidth,
-            height: maxHeight,
-            decoration: BoxDecoration(
-              // image: DecorationImage(
-              //   image: AssetImage('assets/img/Artely_bakcground.png'),
-              //   fit: BoxFit.fill,
-              // ),
-              gradient: LinearGradient(
-                  colors: [
-                    Colors.blue[200],
-                    Colors.blue[50],
-                  ],
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  stops: [0.1, 0.6],
-                  tileMode: TileMode.clamp),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                children: <Widget>[
-                  Padding(
-                    padding: EdgeInsets.only(top: maxHeight * 0.08),
-                    child: Icon(
-                      Icons.person_pin,
-                      color: Colors.blue,
-                      size: 250.0,
-                    ),
-                  ),
-                  getFormulario(maxHeight, maxWidth),
-                ],
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: SingleChildScrollView(
+          child: Stack(
+            children: <Widget>[
+              Center(
+                child: Image.asset(
+                  'assets/img/background.png',
+                  height: maxHeight,
+                  width: maxWidth,
+                  fit: BoxFit.fill,
+                ),
               ),
-            ),
+              Positioned(
+                top: maxHeight * 0.24,
+                left: maxWidth * 0.07,
+                child: Text(
+                  'Iniciar sesión',
+                  style: GoogleFonts.montserrat(
+                      fontSize: 34, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Positioned(
+                top: maxHeight * 0.37,
+                child: Container(
+                  width: maxWidth,
+                  child: getFormulario(maxHeight, maxWidth),
+                ),
+              ),
+              // Positioned(
+              //   top: maxHeight * 0.72,
+              //   left: maxWidth * 0.43,
+              //   child: MaterialButton(
+              //     child: Text(
+              //       'Ingresar',
+              //       style: TextStyle(
+              //         fontSize: 18.0,
+              //         color: Colors.black87,
+              //       ),
+              //     ),
+              //     color: ArtelyColors.teal,
+              //     minWidth: maxWidth * 0.5,
+              //     height: 50.0,
+              //     shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.circular(20.0)),
+              //     onPressed: () {
+              //       setState(() {
+              //         loggin = loggeaUsuario();
+              //         validaLogin(context);
+              //       });
+              //     },
+              //   ),
+              // )
+            ],
           ),
         ),
       ),
@@ -95,7 +102,9 @@ class _LoginState extends State<Login> {
       key: _formKey,
       child: Padding(
         padding: EdgeInsets.symmetric(
-            vertical: maxHeight * 0.01, horizontal: maxWidth * 0.05),
+          vertical: maxHeight * 0.01,
+          horizontal: maxWidth * 0.05,
+        ),
         child: Column(
           children: <Widget>[
             _txtCorreo(),
@@ -106,49 +115,55 @@ class _LoginState extends State<Login> {
             SizedBox(
               height: 25.0,
             ),
-            RichText(
-              text: TextSpan(
-                style: TextStyle(
-                  color: Colors.blueGrey[700],
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14.0,
-                ),
-                children: [
-                  TextSpan(text: '¿No tienes una cuenta? '),
-                  TextSpan(
-                    text: 'Registrate aquí',
-                    style: TextStyle(color: Colors.blue),
-                    recognizer: new TapGestureRecognizer()
-                      ..onTap = () {
-                        Navigator.pushNamed(context, 'registro');
-                      },
+            Align(
+              alignment: Alignment.centerRight,
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    color: Colors.blueGrey[700],
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16.3,
                   ),
-                ],
+                  children: [
+                    TextSpan(text: '¿No tienes una cuenta? '),
+                    TextSpan(
+                      text: 'Registrate aquí',
+                      style: TextStyle(color: ArtelyColors.blackArtely),
+                      recognizer: new TapGestureRecognizer()
+                        ..onTap = () {
+                          Navigator.pushNamed(context, 'registro');
+                        },
+                    ),
+                  ],
+                ),
               ),
             ),
             SizedBox(
-              height: 25.0,
+              height: maxHeight * 0.05,
             ),
-            MaterialButton(
-              child: Text(
-                'Ingresar',
-                style: TextStyle(
-                  fontSize: 18.0,
-                  color: Colors.black87,
+            Align(
+              alignment: Alignment.centerRight,
+              child: MaterialButton(
+                child: Text(
+                  'Ingresar',
+                  style: TextStyle(
+                    fontSize: 18.0,
+                    color: Colors.black87,
+                  ),
                 ),
+                color: ArtelyColors.teal,
+                minWidth: maxWidth * 0.5,
+                height: 50.0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.0)),
+                onPressed: () {
+                  setState(() {
+                    loggin = loggeaUsuario();
+                    validaLogin(context);
+                  });
+                },
               ),
-              color: Colors.blue[300],
-              minWidth: maxWidth,
-              height: 50.0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20.0)),
-              onPressed: () {
-                setState(() {
-                  loggin = loggeaUsuario();
-                  validaLogin(context);
-                });
-              },
-            ),
+            )
           ],
         ),
       ),

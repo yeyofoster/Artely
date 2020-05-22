@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:prueba_maps/src/Class/ArtelyColors.dart';
 import 'package:prueba_maps/src/Routes/RoutesApp.dart';
 import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
 import 'package:prueba_maps/src/pages/Login.dart';
@@ -27,7 +28,7 @@ class MyApp extends StatelessWidget {
       title: 'Artely',
       routes: getApplicationRoutes(),
       theme: ThemeData(
-        primaryColor: Colors.cyan,
+        primaryColor: ArtelyColors.teal,
         textTheme: TextTheme(
           body1: GoogleFonts.roboto(),
         ),
