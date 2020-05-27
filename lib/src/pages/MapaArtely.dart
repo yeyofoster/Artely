@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,7 +19,9 @@ import 'package:prueba_maps/src/Class/PlacesMaps.dart';
 import 'package:prueba_maps/src/Class/Results.dart';
 import 'package:prueba_maps/src/Class/Routes.dart' as Rutas;
 import 'package:prueba_maps/src/Class/RoutesMaps.dart';
+import 'package:prueba_maps/src/Class/RutasGuardadas.dart';
 import 'package:prueba_maps/src/Class/Viaje.dart';
+import 'package:prueba_maps/src/Pages/Rutas.dart';
 import 'package:prueba_maps/src/Provider/Notificaciones_push.dart';
 import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
 import 'package:prueba_maps/src/Util/VentanaEmergente.dart';
@@ -72,6 +75,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     return FutureBuilder(
       future: pantallaPermisos,
       builder: (BuildContext context, AsyncSnapshot snapshot) {
+        print('Estado: ${snapshot.connectionState}');
         if (snapshot.connectionState == ConnectionState.done) {
           if (snapshot.data.runtimeType == PermissionStatus) {
             if (_initialPosition == null) {
@@ -80,7 +84,14 @@ class _MapaArtelyState extends State<MapaArtely> {
               return widgetPrincipal(_maxwidth, _maxheight);
             }
           } else {
-            return widgetPermisos(_maxwidth);
+            Map<PermissionGroup, PermissionStatus> res = snapshot.data;
+            print(res[PermissionGroup.locationWhenInUse]);
+            if (res[PermissionGroup.locationWhenInUse] ==
+                PermissionStatus.granted) {
+              pantallaPermisos = _verificarPermisos();
+            } else {
+              return widgetPermisos(_maxwidth);
+            }
           }
           return Scaffold();
         } else {
@@ -100,12 +111,16 @@ class _MapaArtelyState extends State<MapaArtely> {
       PermissionStatus status = await _permissionHandler
           .checkPermissionStatus(PermissionGroup.locationWhenInUse);
       if (status == PermissionStatus.denied) {
-        // setState(() {});
         return await _permissionHandler
             .requestPermissions([PermissionGroup.locationWhenInUse]);
       } else if (status == PermissionStatus.granted) {
+        print('Permisos otorgados');
         Position pos = await Geolocator()
-            .getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
+            .getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
+            .catchError((onError) {
+          print('Error: $onError');
+        });
+        print(pos);
         setState(() {
           _initialPosition = CameraPosition(
             target: LatLng(pos.latitude, pos.longitude),
@@ -456,6 +471,120 @@ class _MapaArtelyState extends State<MapaArtely> {
     );
   }
 
+  //Genera y modifica los botones para iniciar una ruta aprendida.
+  Future<void> generarRutaAprendida(RutasGuardadas ruta) async {
+    polylinesRutas.clear();
+    marcadores.clear();
+
+    List<LatLng> puntosPolyline = decodeEncodedPolyline(ruta.encodedPolyline);
+    PolylineId idPolyline = PolylineId('Ruta guardada');
+
+    Position miUbicacion = await Geolocator()
+        .getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
+
+    double actualPuntoA = await Geolocator().distanceBetween(
+      miUbicacion.latitude,
+      miUbicacion.longitude,
+      ruta.origen.lugar.latitude,
+      ruta.origen.lugar.longitude,
+    );
+
+    double actualPuntoB = await Geolocator().distanceBetween(
+      miUbicacion.latitude,
+      miUbicacion.longitude,
+      ruta.destino.lugar.latitude,
+      ruta.destino.lugar.longitude,
+    );
+
+    print(actualPuntoA);
+    print(actualPuntoB);
+
+    setState(() {
+      //Agregamos marcador A (origen)
+      marcadores.add(
+        Marker(
+          markerId: MarkerId('Punto A'),
+          position:
+              LatLng(ruta.origen.lugar.latitude, ruta.origen.lugar.longitude),
+          infoWindow:
+              InfoWindow(title: 'Punto A', snippet: ruta.origen.direccion),
+        ),
+      );
+
+      //Agregamos marcador B (destino)
+      marcadores.add(
+        Marker(
+          markerId: MarkerId('Punto B'),
+          position:
+              LatLng(ruta.destino.lugar.latitude, ruta.destino.lugar.longitude),
+          infoWindow:
+              InfoWindow(title: 'Punto B', snippet: ruta.destino.direccion),
+        ),
+      );
+
+      //Configuramos el tipo de viaje
+      tipo = ruta.tipo;
+
+      //Configuramos el encodedPolyline
+      encodedRuta = ruta.encodedPolyline;
+
+      //Agregamos la polyline.
+      Polyline temppoly = Polyline(
+        polylineId: idPolyline,
+        color: Colors.cyan,
+        width: 5,
+        points: puntosPolyline,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+        onTap: () {},
+      );
+      polylinesRutas.add(temppoly);
+
+      //Obtenemos loss limites para mostrar en el mapa.
+      double south =
+          min(ruta.origen.lugar.latitude, ruta.destino.lugar.latitude);
+      double west =
+          min(ruta.origen.lugar.longitude, ruta.destino.lugar.longitude);
+      double north =
+          max(ruta.origen.lugar.latitude, ruta.destino.lugar.latitude);
+      double east =
+          max(ruta.origen.lugar.longitude, ruta.destino.lugar.longitude);
+
+      LatLng southwest = LatLng(south, west);
+      LatLng northeast = LatLng(north, east);
+
+      LatLngBounds limites =
+          LatLngBounds(southwest: southwest, northeast: northeast);
+      _moverRuta(limites, 35.0);
+
+      //Cambiamos el boton para inciar el viaje.
+      botonRuta = Container(
+        key: ValueKey('Ruta Guardada'),
+        child: Container(
+          height: 40.0,
+          child: FlatButton.icon(
+            onPressed: actualPuntoA > 20.0 || actualPuntoB > 20.0
+                ? null
+                : iniciarViaje,
+            color: Colors.cyan[600],
+            icon: Icon(
+              Icons.play_arrow,
+            ),
+            label: Text(
+              '¡Vamos!',
+              style: TextStyle(
+                fontSize: 18.0,
+              ),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
   void generarRuta(String modo) async {
     BusquedaRoutes busqueda = BusquedaRoutes();
     int rutaSeleccionada = 0;
@@ -704,6 +833,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   }
 
   void _inicializaWidgets() {
+    print('Inicializando widgets');
     setState(() {
       botonRuta = SizedBox();
       barraSuperior = cargaBarraSuperior();
@@ -844,7 +974,7 @@ class _MapaArtelyState extends State<MapaArtely> {
         */
         Geolocator geolocator = Geolocator();
         LocationOptions locationOptions = LocationOptions(
-          accuracy: LocationAccuracy.best,
+          accuracy: LocationAccuracy.low,
           timeInterval: 5000,
         );
 
@@ -934,7 +1064,12 @@ class _MapaArtelyState extends State<MapaArtely> {
           color: Colors.cyan,
           size: 27.0,
         ),
-        onPressed: cargarBarraBusqueda,
+        onPressed: () {
+          botonRuta = Container();
+          polylinesRutas.clear();
+          marcadores.clear();
+          cargarBarraBusqueda();
+        },
       ),
     );
   }
@@ -955,6 +1090,8 @@ class _MapaArtelyState extends State<MapaArtely> {
           size: 27.0,
         ),
         onPressed: () {
+          _detener();
+          _ubicarme();
           Navigator.of(context).pushNamed('cuidadores');
         },
       ),
@@ -977,6 +1114,8 @@ class _MapaArtelyState extends State<MapaArtely> {
           size: 27.0,
         ),
         onPressed: () {
+          _detener();
+          _ubicarme();
           Navigator.of(context).pushNamed('viajes');
         },
       ),
@@ -998,8 +1137,19 @@ class _MapaArtelyState extends State<MapaArtely> {
           color: Colors.cyan,
           height: 27.0,
         ),
-        onPressed: () {
-          Navigator.of(context).pushNamed('rutas');
+        onPressed: () async {
+          RutasGuardadas ruta = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PantallaRutas(),
+            ),
+          );
+          if (ruta != null) {
+            generarRutaAprendida(ruta);
+          } else {
+            _detener();
+            _ubicarme();
+          }
         },
       ),
     );
@@ -1021,6 +1171,8 @@ class _MapaArtelyState extends State<MapaArtely> {
           size: 27.0,
         ),
         onPressed: () {
+          _detener();
+          _ubicarme();
           Navigator.of(context).pushNamed('config');
         },
       ),
@@ -1032,7 +1184,7 @@ class _MapaArtelyState extends State<MapaArtely> {
     return SafeArea(
       child: WillPopScope(
         onWillPop: () {
-          if (!enViaje) {
+          if (!enViaje && polylinesRutas.isEmpty) {
             VentanaEmergente cerrarApp = VentanaEmergente(
               height: maxheight * 0.3,
               titulo: 'Cerrando',
@@ -1097,7 +1249,10 @@ class _MapaArtelyState extends State<MapaArtely> {
               ),
             );
             cerrarApp.mostrarVentana(context);
-          } else {}
+          } else {
+            _detener();
+            _ubicarme();
+          }
           return null;
         },
         child: Scaffold(
@@ -1120,12 +1275,6 @@ class _MapaArtelyState extends State<MapaArtely> {
                   elevation: 5.0,
                   onPressed: _ubicarme,
                 ),
-                // child: FloatingActionButton(
-                //   child: Icon(Icons.my_location),
-                //   backgroundColor: Colors.black45,
-                //   tooltip: 'Ubicarme',
-                //   onPressed: _ubicarme,
-                // ),
               ),
               Positioned(
                 width: maxwidth * 0.93,
@@ -1400,11 +1549,12 @@ class _MapaArtelyState extends State<MapaArtely> {
       String encodedPoints = encodePolylineFromPoints(ruta.points, 5);
 
       Map<String, dynamic> datosRuta = {
-        'POrigen': new GeoPoint(marcadores.elementAt(0).position.latitude,
+        'Origen': new GeoPoint(marcadores.elementAt(0).position.latitude,
             marcadores.elementAt(0).position.longitude),
-        'PDestino': new GeoPoint(marcadores.elementAt(1).position.latitude,
+        'Destino': new GeoPoint(marcadores.elementAt(1).position.latitude,
             marcadores.elementAt(1).position.longitude),
         'Encoded_Polyline': encodedPoints,
+        'Tiempo': datosViaje.minutos,
         'Tipo': tipo,
       };
 
@@ -1417,7 +1567,7 @@ class _MapaArtelyState extends State<MapaArtely> {
 
       _detener();
     } else {
-      print('Viaje normal');
+      _detener();
     }
   }
 }

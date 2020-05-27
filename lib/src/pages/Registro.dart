@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flare_flutter/flare_actor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:prueba_maps/src/Class/ArtelyColors.dart';
 import 'package:prueba_maps/src/Util/VentanaEmergente.dart';
@@ -67,14 +68,14 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                   child: _getFormulario(_maxHeight, _maxWidth),
                 ),
               ),
-              // Positioned(
-              //   top: _alturaBoton,
-              //   left: _maxWidth * 0.2,
-              //   child: Container(
-              //     width: _maxWidth * 0.6,
-              //     child: _botonFormulario(),
-              //   ),
-              // ),
+              Positioned(
+                left: _maxWidth * 0.64,
+                top: _maxHeight * 0.05,
+                child: SvgPicture.asset(
+                  'assets/svg/ballena.svg',
+                  width: _maxWidth * 0.35,
+                ),
+              ),
             ],
           ),
         ),
@@ -134,6 +135,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         // border: OutlineInputBorder(
         //   borderRadius: BorderRadius.circular(20.0),
         // ),
+        hintStyle: TextStyle(
+          color: Colors.black.withOpacity(0.7),
+        ),
         hintText: 'Nombre',
         contentPadding: EdgeInsets.symmetric(
           horizontal: 15.0,
@@ -162,6 +166,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         // border: OutlineInputBorder(
         //   borderRadius: BorderRadius.circular(20.0),
         // ),
+        hintStyle: TextStyle(
+          color: Colors.black.withOpacity(0.7),
+        ),
         hintText: 'Primer Apellido',
         contentPadding: EdgeInsets.symmetric(
           horizontal: 15.0,
@@ -196,6 +203,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         // border: OutlineInputBorder(
         //   borderRadius: BorderRadius.circular(20.0),
         // ),
+        hintStyle: TextStyle(
+          color: Colors.black.withOpacity(0.7),
+        ),
         hintText: 'Correo electrónico',
         contentPadding: EdgeInsets.symmetric(
           horizontal: 15.0,
@@ -224,6 +234,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         // border: OutlineInputBorder(
         //   borderRadius: BorderRadius.circular(20.0),
         // ),
+        hintStyle: TextStyle(
+          color: Colors.black.withOpacity(0.7),
+        ),
         hintText: 'Teléfono (Opcional)',
         contentPadding: EdgeInsets.symmetric(
           horizontal: 15.0,
@@ -262,6 +275,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         // border: OutlineInputBorder(
         //   borderRadius: BorderRadius.circular(20.0),
         // ),
+        hintStyle: TextStyle(
+          color: Colors.black.withOpacity(0.7),
+        ),
         hintText: 'Contraseña',
         contentPadding: EdgeInsets.symmetric(
           horizontal: 15.0,
@@ -308,60 +324,63 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   void _enviarDatos() async {
     if (_formKey.currentState.validate()) {
       VentanaEmergente ventanaCarga = VentanaEmergente(
-        height: MediaQuery.of(context).size.height * 0.3,
+        height: MediaQuery.of(context).size.height * 0.35,
+        closeButton: false,
         contenido: FutureBuilder(
           future: autenticaUsuario(),
           builder: (BuildContext context, AsyncSnapshot snapshot) {
             if (snapshot.connectionState == ConnectionState.done) {
               if (snapshot.data.runtimeType == AuthResult) {
                 AuthResult authRes = snapshot.data;
-                print(authRes.user);
                 registraUsuario(authRes.user);
                 return Container(
-                  height: MediaQuery.of(context).size.height * 0.3,
-                  child: Column(
-                    children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20.0),
-                        child: Text(
-                          '¡Bienvenido!',
-                          style: GoogleFonts.manrope(
-                            letterSpacing: 2.0,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 20.0,
+                  height: MediaQuery.of(context).size.height * 0.33,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 20.0),
+                          child: Text(
+                            '¡Bienvenido!',
+                            style: GoogleFonts.manrope(
+                              letterSpacing: 2.0,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 20.0,
+                            ),
                           ),
                         ),
-                      ),
-                      Container(
-                        width: MediaQuery.of(context).size.width * 0.18,
-                        height: MediaQuery.of(context).size.width * 0.18,
-                        child: FlareActor(
-                          'assets/flare/check.flr',
-                          animation: 'checked',
-                        ),
-                      ),
-                      Text(
-                        'Usuario creado exitosamente. Inicia sesión',
-                        style: GoogleFonts.openSans(color: Colors.blueGrey),
-                        textAlign: TextAlign.center,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 15.0,
-                        ),
-                        child: MaterialButton(
-                          color: Colors.green[400],
-                          minWidth: MediaQuery.of(context).size.width * 0.6,
-                          child: Text('Iniciar sesión'),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.0),
+                        Container(
+                          width: MediaQuery.of(context).size.width * 0.18,
+                          height: MediaQuery.of(context).size.width * 0.18,
+                          child: FlareActor(
+                            'assets/flare/check.flr',
+                            animation: 'checked',
                           ),
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/');
-                          },
                         ),
-                      ),
-                    ],
+                        Text(
+                          'Usuario creado exitosamente. Verifica tu email para iniciar sesión',
+                          style: GoogleFonts.openSans(color: Colors.blueGrey),
+                          textAlign: TextAlign.center,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 15.0,
+                          ),
+                          child: MaterialButton(
+                            color: Colors.green[400],
+                            minWidth: MediaQuery.of(context).size.width * 0.6,
+                            child: Text('Iniciar sesión'),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.0),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               } else {
@@ -443,10 +462,18 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   //Método que intenta autenticar un nuevo usuario. Si ya existe ee correo retorna el error.
   Future autenticaUsuario() async {
     try {
-      return await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      AuthResult res =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _correoController.text,
         password: _contraController.text,
       );
+      print('Resultado: $res');
+      print('El usuario es: ${res.user.displayName}');
+      if (res.user != null) {
+        print('Mandando correo');
+        res.user.sendEmailVerification();
+      }
+      return res;
     } catch (error) {
       print(error);
       return error;
@@ -466,7 +493,6 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
         'Telefono': int.parse(_telController.text),
         'Viaje': null
       };
-
       await dbFire.collection('Artely_BD').document(user.uid).setData(registro);
     } catch (e) {
       print(e.code);

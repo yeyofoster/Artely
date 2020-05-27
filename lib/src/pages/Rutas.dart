@@ -14,6 +14,7 @@ class PantallaRutas extends StatefulWidget {
 class _PantallaRutasState extends State<PantallaRutas> {
   Future<List<RutasGuardadas>> _getRutas;
   PreferenciasUsuario _preferenciasUsuario;
+  List<RutasGuardadas> rutasGuardadas = [];
 
   @override
   void initState() {
@@ -42,6 +43,7 @@ class _PantallaRutasState extends State<PantallaRutas> {
       builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
           List<RutasGuardadas> rutas = snapshot.data;
+          rutasGuardadas = rutas;
           if (rutas.length > 0) {
             return ListView.builder(
               itemCount: rutas.length,
@@ -49,63 +51,66 @@ class _PantallaRutasState extends State<PantallaRutas> {
                 return Card(
                   elevation: 3.0,
                   child: ListTile(
-                      title: Text(
-                        "Ruta ${index + 1}",
-                        style: GoogleFonts.roboto(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18.0,
-                        ),
+                    title: Text(
+                      "Ruta ${index + 1}",
+                      style: GoogleFonts.roboto(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18.0,
                       ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 5.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(rutas.elementAt(index).origen.direccion),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 80.0),
-                              child: Transform.rotate(
-                                angle: pi / 2,
-                                child: Icon(Icons.compare_arrows),
-                              ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 5.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(rutas.elementAt(index).origen.direccion),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 80.0),
+                            child: Transform.rotate(
+                              angle: pi / 2,
+                              child: Icon(Icons.compare_arrows),
                             ),
-                            Text(rutas.elementAt(index).destino.direccion),
-                          ],
-                        ),
+                          ),
+                          Text(rutas.elementAt(index).destino.direccion),
+                        ],
                       ),
-                      leading: Padding(
-                        padding: const EdgeInsets.only(top: 10.0),
-                        child: CircleAvatar(
-                          backgroundColor: Colors.transparent,
-                          child: rutas.elementAt(index).tipo == 1
-                              ? Icon(
-                                  Icons.directions_car,
-                                  size: 28.0,
-                                  color: Colors.cyan,
-                                )
-                              : Icon(
-                                  Icons.directions_walk,
-                                  size: 28.0,
-                                  color: Colors.cyan,
-                                ),
-                        ),
+                    ),
+                    leading: Padding(
+                      padding: const EdgeInsets.only(top: 10.0),
+                      child: CircleAvatar(
+                        backgroundColor: Colors.transparent,
+                        child: rutas.elementAt(index).tipo == 1
+                            ? Icon(
+                                Icons.directions_car,
+                                size: 28.0,
+                                color: Colors.cyan,
+                              )
+                            : Icon(
+                                Icons.directions_walk,
+                                size: 28.0,
+                                color: Colors.cyan,
+                              ),
                       ),
-                      trailing: Padding(
-                        padding: const EdgeInsets.only(top: 10.0),
-                        child: IconButton(
-                          icon: Icon(Icons.delete),
-                          color: Colors.red,
-                          onPressed: () {},
-                        ),
+                    ),
+                    trailing: Padding(
+                      padding: const EdgeInsets.only(top: 10.0),
+                      child: IconButton(
+                        icon: Icon(Icons.delete),
+                        color: Colors.red,
+                        onPressed: () {},
                       ),
-                      contentPadding: EdgeInsets.only(
-                        top: 0.0,
-                        bottom: 7.5,
-                        left: 10.0,
-                        right: 15.0,
-                      ),
-                      onTap: () {}),
+                    ),
+                    contentPadding: EdgeInsets.only(
+                      top: 0.0,
+                      bottom: 7.5,
+                      left: 10.0,
+                      right: 15.0,
+                    ),
+                    onTap: () {
+                      Navigator.pop(context, rutasGuardadas.elementAt(index));
+                    },
+                  ),
                 );
               },
             );

@@ -15,14 +15,16 @@ class RutasGuardadas {
   });
 
   RutasGuardadas.fromJson(Map<String, dynamic> json) {
-    destino.lugar = new Position(
+    Position destinoPosition = new Position(
       latitude: json['Destino'].latitude,
       longitude: json['Destino'].longitude,
     );
-    origen.lugar = new Position(
+    Position origenPosition = new Position(
       latitude: json['Origen'].latitude,
       longitude: json['Origen'].longitude,
     );
+    destino.lugar = destinoPosition;
+    origen.lugar = origenPosition;
     tipo = json['Tipo'];
     encodedPolyline = json['Encoded_Polyline'];
   }
