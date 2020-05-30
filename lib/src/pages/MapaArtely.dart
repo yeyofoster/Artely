@@ -10,6 +10,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:prueba_maps/src/Class/ArtelyColors.dart';
 
 //Librerias Propias
 import 'package:prueba_maps/src/Class/BusquedaMaps.dart';
@@ -21,6 +22,7 @@ import 'package:prueba_maps/src/Class/Routes.dart' as Rutas;
 import 'package:prueba_maps/src/Class/RoutesMaps.dart';
 import 'package:prueba_maps/src/Class/RutasGuardadas.dart';
 import 'package:prueba_maps/src/Class/Viaje.dart';
+import 'package:prueba_maps/src/Pages/MapaCuidador.dart';
 import 'package:prueba_maps/src/Pages/Rutas.dart';
 import 'package:prueba_maps/src/Provider/Notificaciones_push.dart';
 import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
@@ -52,6 +54,7 @@ class _MapaArtelyState extends State<MapaArtely> {
   int tipo;
   bool enViaje = false;
   PreferenciasUsuario preferencias = new PreferenciasUsuario();
+  List<String> protegidosEnViaje = [];
   Future pantallaPermisos;
   Viaje datosViaje = Viaje();
   //Terminan variables
@@ -61,9 +64,30 @@ class _MapaArtelyState extends State<MapaArtely> {
     super.initState();
     _inicializaWidgets();
     pantallaPermisos = _verificarPermisos();
+    // preferencias.protegidosEnViaje = [];
+    protegidosEnViaje = preferencias.protegidosEnViaje ?? [];
 
     final notificaciones = PushNotificationsFirebase();
     notificaciones.initNotifications(preferencias.userID);
+
+    notificaciones.mensajes.listen(
+      (datos) {
+        setState(() {
+          // print(datos['click_action'].runtimeType);
+          if (datos['tipo_notificacion'] == 'inicio_viaje') {
+            print('Agregando a lista de protegidos en viaje');
+            protegidosEnViaje.add(datos['id_Protegido']);
+            preferencias.protegidosEnViaje = protegidosEnViaje;
+          } else if (datos['tipo_notificacion'] == 'finalizo_viaje') {
+            print('Eliminando de la lista de protegidos en viaje');
+            protegidosEnViaje.removeWhere(
+              (idProtegido) => idProtegido == datos['id_Protegido'],
+            );
+            preferencias.protegidosEnViaje = protegidosEnViaje;
+          }
+        });
+      },
+    );
   }
 
   @override
@@ -1188,6 +1212,7 @@ class _MapaArtelyState extends State<MapaArtely> {
             VentanaEmergente cerrarApp = VentanaEmergente(
               height: maxheight * 0.3,
               titulo: 'Cerrando',
+              closeButton: false,
               backgroundColorTitulo: Colors.cyan,
               contenido: Container(
                 alignment: Alignment.center,
@@ -1313,6 +1338,49 @@ class _MapaArtelyState extends State<MapaArtely> {
                   child: botonRuta,
                 ),
               ),
+              Positioned(
+                right: 0.0,
+                top: enViaje ? maxheight * 0.72 : maxheight * 0.76,
+                child: AnimatedSwitcher(
+                  duration: Duration(
+                    milliseconds: 600,
+                  ),
+                  child: protegidosEnViaje.length > 0
+                      ? MaterialButton(
+                          height: maxheight * 0.07,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(20.0),
+                              bottomLeft: Radius.circular(20.0),
+                            ),
+                          ),
+                          color: ArtelyColors.mediumSeaGreen.withOpacity(0.75),
+                          child: Row(
+                            children: <Widget>[
+                              Text(
+                                '${protegidosEnViaje.length}',
+                                style: GoogleFonts.montserrat(fontSize: 24.0),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 8.0),
+                                child: Icon(
+                                  Icons.person_pin_circle,
+                                  size: 26.0,
+                                ),
+                              ),
+                            ],
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => MapaCuidador(),
+                              ),
+                            );
+                          },
+                        )
+                      : Container(),
+                ),
+              ),
               AnimatedSwitcher(
                 duration: Duration(
                   milliseconds: 700,
@@ -1376,8 +1444,8 @@ class _MapaArtelyState extends State<MapaArtely> {
         topLeft: Radius.circular(25.0),
         topRight: Radius.circular(25.0),
       ),
-      maxHeight: maxheight * 0.26,
-      minHeight: maxheight * 0.1,
+      maxHeight: maxheight > 700 ? maxheight * 0.26 : maxheight * 0.33,
+      minHeight: maxheight > 700 ? maxheight * 0.1 : maxheight * 0.2,
       panel: slideUpPanel(maxwidth, maxheight),
     );
   }

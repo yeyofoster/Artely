@@ -16,11 +16,19 @@ class PreferenciasUsuario {
     this._preferences = await SharedPreferences.getInstance();
   }
 
-  set userID(String value){
+  set userID(String value) {
     this._preferences.setString('userID', value);
   }
 
-  get userID{
+  get userID {
     return this._preferences.getString('userID') ?? '';
+  }
+
+  set protegidosEnViaje(List<String> idProtegidos) {
+    this._preferences.setStringList('protegidos', idProtegidos);
+  }
+
+  List<String> get protegidosEnViaje {
+    return this._preferences.getStringList('protegidos');
   }
 }
