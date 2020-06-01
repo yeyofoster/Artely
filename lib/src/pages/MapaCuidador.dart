@@ -1,15 +1,18 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:prueba_maps/src/Class/ArtelyColors.dart';
+import 'package:prueba_maps/src/Class/Polylines.dart';
 import 'package:prueba_maps/src/Class/ViajeProtegido.dart';
 import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
 import 'package:prueba_maps/src/Util/Direcciones.dart';
-// import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MapaCuidador extends StatefulWidget {
   MapaCuidador({Key key}) : super(key: key);
@@ -27,18 +30,24 @@ class _MapaCuidadorState extends State<MapaCuidador> {
   CameraPosition _initialPosition;
 
   Future cargaPantalla;
+  Timer tracking;
   Set<Polyline> polylinesRutas = {};
   Set<Marker> marcadores = Set();
+  String nombreEnViaje = '';
+  int protegidoSeleccionado = 0;
 
   @override
   void initState() {
     super.initState();
     protegidosEnViaje = preferencias.protegidosEnViaje ?? [];
-    for (var prot in protegidosEnViaje) {
-      print(prot);
-    }
-
     cargaPantalla = obtenerDatosViajes();
+  }
+
+  @override
+  void dispose() {
+    print('Deteniendo todo');
+    tracking?.cancel();
+    super.dispose();
   }
 
   @override
@@ -86,28 +95,36 @@ class _MapaCuidadorState extends State<MapaCuidador> {
       compassEnabled: true,
       rotateGesturesEnabled: true,
       tiltGesturesEnabled: false,
-      trafficEnabled: true,
+      trafficEnabled: false,
       zoomGesturesEnabled: true,
       markers: Set.from(marcadores), //Crea la lista de marcadores para el mapa
       polylines: polylinesRutas,
       mapToolbarEnabled:
           false, //Quita los botones de navegación cuando se presiona un marcador.
       onTap: (puntoLatLng) {},
-      onMapCreated: (GoogleMapController controller) {
+      onMapCreated: (GoogleMapController controller) async {
         _controller.complete(controller);
         _mapController = controller;
 
-        actualizaDatosMapa(
+        await actualizaDatosMapa(
             listaDatosViaje.first.origen,
+            listaDatosViaje.first.actual,
             listaDatosViaje.first.destino,
-            listaDatosViaje.first.encodedPolyline);
+            listaDatosViaje.first.encodedPolyline,
+            listaDatosViaje.first.tipo);
+        //Mostramos toda la ruta en el mapa.
+        _moverRuta(0, 36.0);
+
+        tracking = Timer.periodic(
+          Duration(seconds: 5),
+          (Timer t) => sigueViaje(protegidosEnViaje.first, 0),
+        );
       },
     );
   }
 
   //Método que obtiene todos los datos de los viajes en curso.
   Future<void> obtenerDatosViajes() async {
-    print('Seguir viaje');
     CollectionReference bd = Firestore.instance.collection('Artely_BD');
     DocumentSnapshot docProtegido;
     try {
@@ -152,8 +169,8 @@ class _MapaCuidadorState extends State<MapaCuidador> {
       setState(() {
         _initialPosition = CameraPosition(
           target: LatLng(
-            listaDatosViaje.first.origen.lugar.latitude,
-            listaDatosViaje.first.origen.lugar.longitude,
+            listaDatosViaje.first.actual.lugar.latitude,
+            listaDatosViaje.first.actual.lugar.longitude,
           ),
           zoom: 16.0,
         );
@@ -165,10 +182,45 @@ class _MapaCuidadorState extends State<MapaCuidador> {
   }
 
   //Método encargado e actualizar los datos del mapa(marcadores, polylines, etc) si se selecciona un viaje a seguir.
-  void actualizaDatosMapa(
-      Direcciones origen, Direcciones destino, String encodedPolyline) {
+  Future<void> actualizaDatosMapa(Direcciones origen, Direcciones actual,
+      Direcciones destino, String encodedPolyline, int tipoViaje) async {
+    //Limpíamos las listas de marcadores y de polylineas.
     marcadores.clear();
     polylinesRutas.clear();
+
+    double tamanoIcon = MediaQuery.of(context).size.width * 0.35;
+
+    Uint8List iconBytes;
+    if (tipoViaje == 1) {
+      iconBytes =
+          await getBytesFromAsset('assets/img/car_pin.png', tamanoIcon.round());
+    } else {
+      iconBytes = await getBytesFromAsset(
+          'assets/img/walk_pin.png', tamanoIcon.round());
+    }
+
+    //Obtenemos los puntos de la polylinea.
+    List<String> encodedLegs = encodedPolyline.split('  ');
+    List<LatLng> puntosRuta = [];
+    for (String encodedLeg in encodedLegs) {
+      List<LatLng> temp = decodeEncodedPolyline(encodedLeg);
+      puntosRuta.addAll(temp);
+    }
+
+    //Agregamos los puntos a la polylinea.
+    PolylineId idPolyline = PolylineId('Viaje');
+    Polyline polylineViaje = Polyline(
+      polylineId: idPolyline,
+      color: Colors.cyan,
+      width: 5,
+      points: puntosRuta,
+      startCap: Cap.roundCap,
+      endCap: Cap.roundCap,
+      onTap: () {},
+    );
+    polylinesRutas.add(polylineViaje);
+
+    //Agregamos los marcadores de origen, destino y actual.
     marcadores.add(
       Marker(
         markerId: MarkerId('Origen'),
@@ -184,35 +236,52 @@ class _MapaCuidadorState extends State<MapaCuidador> {
         infoWindow: InfoWindow(title: 'Destino', snippet: destino.direccion),
       ),
     );
-    _moverRuta(0, 35.0);
+
+    marcadores.add(
+      Marker(
+        markerId: MarkerId('Actual'),
+        position: LatLng(actual.lugar.latitude, actual.lugar.longitude),
+        infoWindow:
+            InfoWindow(title: 'Posición actual', snippet: actual.direccion),
+        icon: BitmapDescriptor.fromBytes(iconBytes),
+      ),
+    );
   }
 
   //Método que muestra en el mapa los marcadores con el zoom necesario.
   Future<void> _moverRuta(int protegidoSeleccionado, double zoom) async {
-    double south = min(
-        listaDatosViaje.elementAt(protegidoSeleccionado).origen.lugar.latitude,
-        listaDatosViaje
-            .elementAt(protegidoSeleccionado)
-            .destino
-            .lugar
-            .latitude);
-    double west = min(
-        listaDatosViaje.elementAt(protegidoSeleccionado).origen.lugar.longitude,
-        listaDatosViaje.first.destino.lugar.longitude);
-    double north = max(
-        listaDatosViaje.elementAt(protegidoSeleccionado).origen.lugar.latitude,
-        listaDatosViaje
-            .elementAt(protegidoSeleccionado)
-            .destino
-            .lugar
-            .latitude);
-    double east = max(
-        listaDatosViaje.elementAt(protegidoSeleccionado).origen.lugar.longitude,
-        listaDatosViaje
-            .elementAt(protegidoSeleccionado)
-            .destino
-            .lugar
-            .longitude);
+    List<LatLng> listaPuntos = polylinesRutas.first.points;
+    double south = 90.0;
+    double west = 180.0;
+    double north = -90.0;
+    double east = -180.0;
+
+    for (int i = 1; i < listaPuntos.length; i++) {
+      double tempSouth = min(listaPuntos.elementAt(i - 1).latitude,
+          listaPuntos.elementAt(i).latitude);
+
+      double tempWest = min(listaPuntos.elementAt(i - 1).longitude,
+          listaPuntos.elementAt(i).longitude);
+
+      double tempNorth = max(listaPuntos.elementAt(i - 1).latitude,
+          listaPuntos.elementAt(i).latitude);
+
+      double tempEast = max(listaPuntos.elementAt(i - 1).longitude,
+          listaPuntos.elementAt(i).longitude);
+
+      if (south > tempSouth) {
+        south = tempSouth;
+      }
+      if (west > tempWest) {
+        west = tempWest;
+      }
+      if (north < tempNorth) {
+        north = tempNorth;
+      }
+      if (east < tempEast) {
+        east = tempEast;
+      }
+    }
 
     LatLng southwest = LatLng(south, west);
     LatLng northeast = LatLng(north, east);
@@ -227,10 +296,21 @@ class _MapaCuidadorState extends State<MapaCuidador> {
     });
   }
 
+  //Obtiene los bytes y el tamaño de la imagen a mostrar como pin.
+  Future<Uint8List> getBytesFromAsset(String path, int width) async {
+    ByteData data = await rootBundle.load(path);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
+        targetWidth: width);
+    ui.FrameInfo fi = await codec.getNextFrame();
+    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))
+        .buffer
+        .asUint8List();
+  }
+
   //Método que regresa el widget dependiendo de la cantidad de protegidos en viaje.
   Widget botonVerViaje() {
-    String nombreEnViaje = listaDatosViaje.first.nombreProtegido;
-    int protegidoSeleccionado = 0;
+    nombreEnViaje =
+        listaDatosViaje.elementAt(protegidoSeleccionado).nombreProtegido;
     if (listaDatosViaje.length > 1) {
       return Row(
         children: <Widget>[
@@ -285,7 +365,7 @@ class _MapaCuidadorState extends State<MapaCuidador> {
                 LatLngBounds limites =
                     LatLngBounds(southwest: southwest, northeast: northeast);
                 print(limites);
-                _moverRuta(protegidoSeleccionado, 35.0);
+                _moverRuta(protegidoSeleccionado, 36.0);
               },
               color: ArtelyColors.mediumSeaGreen.withOpacity(0.85),
               icon: Icon(
@@ -324,15 +404,34 @@ class _MapaCuidadorState extends State<MapaCuidador> {
                 color: Colors.cyan,
                 size: 35.0,
               ),
-              onSelected: (seleccionado) {
+              onSelected: (seleccionado) async {
                 protegidoSeleccionado = seleccionado;
-                actualizaDatosMapa(
+                nombreEnViaje = listaDatosViaje
+                    .elementAt(protegidoSeleccionado)
+                    .nombreProtegido;
+
+                await actualizaDatosMapa(
                     listaDatosViaje.elementAt(protegidoSeleccionado).origen,
+                    listaDatosViaje.elementAt(protegidoSeleccionado).actual,
                     listaDatosViaje.elementAt(protegidoSeleccionado).destino,
                     listaDatosViaje
                         .elementAt(protegidoSeleccionado)
-                        .encodedPolyline);
-                _moverRuta(protegidoSeleccionado, 35.0);
+                        .encodedPolyline,
+                    listaDatosViaje.elementAt(protegidoSeleccionado).tipo);
+                
+                await sigueViaje(
+                    protegidosEnViaje.elementAt(protegidoSeleccionado),
+                    protegidoSeleccionado);
+
+                _moverRuta(protegidoSeleccionado, 36.0);
+                
+                tracking?.cancel();
+                tracking = Timer.periodic(
+                  Duration(seconds: 5),
+                  (Timer t) => sigueViaje(
+                      protegidosEnViaje.elementAt(protegidoSeleccionado),
+                      protegidoSeleccionado),
+                );
               },
               itemBuilder: (BuildContext context) {
                 List<PopupMenuEntry> opciones = <PopupMenuEntry>[];
@@ -357,7 +456,7 @@ class _MapaCuidadorState extends State<MapaCuidador> {
         height: 40.0,
         child: FlatButton.icon(
           onPressed: () {
-            _moverRuta(0, 35.0);
+            _moverRuta(0, 36.0);
           },
           color: ArtelyColors.mediumSeaGreen.withOpacity(0.85),
           icon: Icon(
@@ -375,5 +474,67 @@ class _MapaCuidadorState extends State<MapaCuidador> {
         ),
       );
     }
+  }
+
+  Future<void> sigueViaje(String idDoc, int protegidoSeleccionado) async {
+    // print('Haciendo tracking del documento $idDoc');
+    DocumentSnapshot docProtegido =
+        await Firestore.instance.collection('Artely_BD').document(idDoc).get();
+    setState(() {
+      // print('Actualizando punto actual');
+      // print(
+      //     'Anterior: ${listaDatosViaje.elementAt(protegidoSeleccionado).actual.toString()}\n');
+      listaDatosViaje.elementAt(protegidoSeleccionado).actual.lugar = Position(
+          latitude: docProtegido.data['Viaje']['PActual'].latitude,
+          longitude: docProtegido.data['Viaje']['PActual'].longitude);
+      listaDatosViaje
+          .elementAt(protegidoSeleccionado)
+          .actual
+          .positionToAddress();
+      // print(
+      //     'Nuevo: ${listaDatosViaje.elementAt(protegidoSeleccionado).actual.toString()}\n\n');
+    });
+
+    //Seleccionamos el pin a agregar
+    double tamanoIcon = MediaQuery.of(context).size.width * 0.35;
+
+    Uint8List iconBytes;
+    if (listaDatosViaje.elementAt(protegidoSeleccionado).tipo == 1) {
+      iconBytes =
+          await getBytesFromAsset('assets/img/car_pin.png', tamanoIcon.round());
+    } else {
+      iconBytes = await getBytesFromAsset(
+          'assets/img/walk_pin.png', tamanoIcon.round());
+    }
+
+    //Eliminamos el viejo marcador
+    marcadores.removeWhere(
+      (marker) => marker.markerId == MarkerId('Actual'),
+    );
+
+    //Agregamos el nuevo marcador
+    marcadores.add(
+      Marker(
+        markerId: MarkerId('Actual'),
+        position: LatLng(
+            listaDatosViaje
+                .elementAt(protegidoSeleccionado)
+                .actual
+                .lugar
+                .latitude,
+            listaDatosViaje
+                .elementAt(protegidoSeleccionado)
+                .actual
+                .lugar
+                .longitude),
+        infoWindow: InfoWindow(
+            title: 'Posición actual',
+            snippet: listaDatosViaje
+                .elementAt(protegidoSeleccionado)
+                .actual
+                .direccion),
+        icon: BitmapDescriptor.fromBytes(iconBytes),
+      ),
+    );
   }
 }

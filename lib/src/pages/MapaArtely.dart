@@ -1289,7 +1289,9 @@ class _MapaArtelyState extends State<MapaArtely> {
                 child: _creaMapa(),
               ),
               Positioned(
-                top: enViaje ? maxheight * 0.76 : maxheight * 0.86,
+                top: maxheight > 700
+                    ? (enViaje ? maxheight * 0.76 : maxheight * 0.86)
+                    : (enViaje ? maxheight * 0.7 : maxheight * 0.8),
                 right: maxwidth * 0.02,
                 child: MaterialButton(
                   child: Icon(Icons.my_location,
@@ -1445,7 +1447,7 @@ class _MapaArtelyState extends State<MapaArtely> {
         topRight: Radius.circular(25.0),
       ),
       maxHeight: maxheight > 700 ? maxheight * 0.26 : maxheight * 0.33,
-      minHeight: maxheight > 700 ? maxheight * 0.1 : maxheight * 0.2,
+      minHeight: maxheight > 700 ? maxheight * 0.1 : maxheight * 0.15,
       panel: slideUpPanel(maxwidth, maxheight),
     );
   }
