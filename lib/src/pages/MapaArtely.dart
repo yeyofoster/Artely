@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -524,27 +525,202 @@ class _MapaArtelyState extends State<MapaArtely> {
     print(actualPuntoB);
 
     setState(() {
-      //Agregamos marcador A (origen)
-      marcadores.add(
-        Marker(
-          markerId: MarkerId('Punto A'),
-          position:
-              LatLng(ruta.origen.lugar.latitude, ruta.origen.lugar.longitude),
-          infoWindow:
-              InfoWindow(title: 'Punto A', snippet: ruta.origen.direccion),
-        ),
-      );
+      if (actualPuntoA < 20) {
+        //Agregamos el punto destino (Origen).
+        marcadores.add(
+          Marker(
+            markerId: MarkerId('Origen'),
+            position:
+                LatLng(ruta.origen.lugar.latitude, ruta.origen.lugar.longitude),
+            infoWindow:
+                InfoWindow(title: 'Origen', snippet: ruta.origen.direccion),
+          ),
+        );
 
-      //Agregamos marcador B (destino)
-      marcadores.add(
-        Marker(
-          markerId: MarkerId('Punto B'),
-          position:
-              LatLng(ruta.destino.lugar.latitude, ruta.destino.lugar.longitude),
-          infoWindow:
-              InfoWindow(title: 'Punto B', snippet: ruta.destino.direccion),
-        ),
-      );
+        //Agregamos el punto origen(Destino)
+        marcadores.add(
+          Marker(
+            markerId: MarkerId('Destino'),
+            position: LatLng(
+                ruta.destino.lugar.latitude, ruta.destino.lugar.longitude),
+            infoWindow:
+                InfoWindow(title: 'Destino', snippet: ruta.destino.direccion),
+          ),
+        );
+
+        //Datos de origen
+        datosViaje.pactual = miUbicacion;
+        datosViaje.origen = ruta.origen.direccion;
+
+        //Datos destino
+        datosViaje.pdestino = ruta.destino.lugar;
+        datosViaje.destino = ruta.destino.direccion;
+
+        //Actualizamos los minutos
+        datosViaje.minutos = ruta.tiempo.toString();
+
+        //Actualizamos el tipo de viaje
+        datosViaje.tipo = ruta.tipo;
+
+        //Actualizamos la hora de inicio y hora estimada de llegada.
+        datosViaje.horaInicio = DateFormat.Hm().format(DateTime.now());
+        datosViaje.horaLlegada = DateFormat.Hm().format(
+          DateTime.now().add(
+            Duration(
+              minutes: ruta.tiempo,
+            ),
+          ),
+        );
+
+        //Indicamos que no es un aprendizaje de ruta.
+        datosViaje.aprendizaje = false;
+
+        //Cambiamos el boton para inciar el viaje.
+        botonRuta = Container(
+          key: ValueKey('Ruta Guardada'),
+          child: Container(
+            height: 40.0,
+            child: FlatButton.icon(
+              onPressed: iniciarViaje,
+              color: Colors.cyan[600],
+              icon: Icon(
+                Icons.play_arrow,
+              ),
+              label: Text(
+                '¡Vamos!',
+                style: TextStyle(
+                  fontSize: 18.0,
+                ),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+          ),
+        );
+      } else if (actualPuntoB < 20) {
+        //Agregamos el punto origen(Destino)
+        marcadores.add(
+          Marker(
+            markerId: MarkerId('Origen'),
+            position: LatLng(
+                ruta.destino.lugar.latitude, ruta.destino.lugar.longitude),
+            infoWindow:
+                InfoWindow(title: 'Origen', snippet: ruta.destino.direccion),
+          ),
+        );
+
+        //Agregamos el punto destino (Origen).
+        marcadores.add(
+          Marker(
+            markerId: MarkerId('Destino'),
+            position:
+                LatLng(ruta.origen.lugar.latitude, ruta.origen.lugar.longitude),
+            infoWindow:
+                InfoWindow(title: 'Destino', snippet: ruta.origen.direccion),
+          ),
+        );
+
+        //Datos de origen
+        datosViaje.pactual = miUbicacion;
+        datosViaje.origen = ruta.destino.direccion;
+
+        //Datos destino
+        datosViaje.pdestino = ruta.origen.lugar;
+        datosViaje.destino = ruta.origen.direccion;
+
+        //Actualizamos los minutos
+        datosViaje.minutos = ruta.tiempo.toString();
+
+        //Actualizamos el tipo de viaje
+        datosViaje.tipo = ruta.tipo;
+
+        //Actualizamos la hora de inicio y hora estimada de llegada.
+        datosViaje.horaInicio = DateFormat.Hm().format(DateTime.now());
+        datosViaje.horaLlegada = DateFormat.Hm().format(
+          DateTime.now().add(
+            Duration(
+              minutes: ruta.tiempo,
+            ),
+          ),
+        );
+
+        //Indicamos que no es un aprendizaje de ruta.
+        datosViaje.aprendizaje = false;
+
+        //Cambiamos el boton para inciar el viaje.
+        botonRuta = Container(
+          key: ValueKey('Ruta Guardada'),
+          child: Container(
+            height: 40.0,
+            child: FlatButton.icon(
+              onPressed: iniciarViaje,
+              color: Colors.cyan[600],
+              icon: Icon(
+                Icons.play_arrow,
+              ),
+              label: Text(
+                '¡Vamos!',
+                style: TextStyle(
+                  fontSize: 18.0,
+                ),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+          ),
+        );
+      } else {
+        //Agregamos marcador A (origen)
+        marcadores.add(
+          Marker(
+            markerId: MarkerId('Punto A'),
+            position:
+                LatLng(ruta.origen.lugar.latitude, ruta.origen.lugar.longitude),
+            infoWindow:
+                InfoWindow(title: 'Punto A', snippet: ruta.origen.direccion),
+          ),
+        );
+
+        //Agregamos marcador B (destino)
+        marcadores.add(
+          Marker(
+            markerId: MarkerId('Punto B'),
+            position: LatLng(
+                ruta.destino.lugar.latitude, ruta.destino.lugar.longitude),
+            infoWindow:
+                InfoWindow(title: 'Punto B', snippet: ruta.destino.direccion),
+          ),
+        );
+
+        //Cambiamos el boton para inciar el viaje.
+        botonRuta = Container(
+          key: ValueKey('Ruta Guardada'),
+          child: Container(
+            height: 40.0,
+            child: FlatButton.icon(
+              onPressed: () {
+                print(
+                    'No se puede iniciar el viaje. No estas cerca de ninguno de los puntos.');
+              },
+              color: Colors.blueGrey,
+              icon: Icon(
+                Icons.play_arrow,
+              ),
+              label: Text(
+                '¡Vamos!',
+                style: TextStyle(
+                  fontSize: 18.0,
+                ),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+          ),
+        );
+      }
 
       //Configuramos el tipo de viaje
       tipo = ruta.tipo;
@@ -580,32 +756,6 @@ class _MapaArtelyState extends State<MapaArtely> {
       LatLngBounds limites =
           LatLngBounds(southwest: southwest, northeast: northeast);
       _moverRuta(limites, 35.0);
-
-      //Cambiamos el boton para inciar el viaje.
-      botonRuta = Container(
-        key: ValueKey('Ruta Guardada'),
-        child: Container(
-          height: 40.0,
-          child: FlatButton.icon(
-            onPressed: actualPuntoA > 20.0 || actualPuntoB > 20.0
-                ? null
-                : iniciarViaje,
-            color: Colors.cyan[600],
-            icon: Icon(
-              Icons.play_arrow,
-            ),
-            label: Text(
-              '¡Vamos!',
-              style: TextStyle(
-                fontSize: 18.0,
-              ),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-          ),
-        ),
-      );
     });
   }
 

@@ -19,8 +19,8 @@ class HistorialViaje {
       longitude: json['Origen'].longitude,
     );
     destino.lugar = new Position(
-      latitude: json['Origen'].latitude,
-      longitude: json['Origen'].longitude,
+      latitude: json['Destino'].latitude,
+      longitude: json['Destino'].longitude,
     );
     inicio = new DateFormat.yMMMMEEEEd('es_MX').add_jm().format(
         DateTime.fromMillisecondsSinceEpoch(json['Inicio'].seconds * 1000,

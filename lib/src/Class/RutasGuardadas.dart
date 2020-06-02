@@ -5,12 +5,14 @@ class RutasGuardadas {
   Direcciones origen = Direcciones();
   Direcciones destino = Direcciones();
   int tipo;
+  int tiempo;
   String encodedPolyline;
 
   RutasGuardadas({
     this.origen,
     this.destino,
     this.tipo,
+    this.tiempo,
     this.encodedPolyline,
   });
 
@@ -26,6 +28,7 @@ class RutasGuardadas {
     destino.lugar = destinoPosition;
     origen.lugar = origenPosition;
     tipo = json['Tipo'];
+    tiempo = json['Tiempo'];
     encodedPolyline = json['Encoded_Polyline'];
   }
 
@@ -34,6 +37,7 @@ class RutasGuardadas {
     data['Destino'] = this.destino;
     data['Origen'] = this.origen;
     data['Tipo'] = this.tipo;
+    data['Tiempo'] = this.tiempo;
     data['Encoded_Polyline'] = this.encodedPolyline;
     return data;
   }
@@ -42,7 +46,8 @@ class RutasGuardadas {
   String toString() {
     return 'Origen: [${this.origen.toString()}] ' +
         'Destino: [${this.destino.toString()}] ' +
-        'tipo: ${this.tipo} ' +
+        'Tipo: ${this.tipo} ' +
+        'Tiempo: ${this.tiempo} ' +
         'Encoded polyline: ${this.encodedPolyline} ';
   }
 }
