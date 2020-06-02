@@ -7,6 +7,6 @@
     <item>
         <bitmap
             android:gravity="center"
-            android:src="@drawable/ic_logo_artely_blue" />
+            android:src="@drawable/ballena" />
     </item>
 </layer-list>

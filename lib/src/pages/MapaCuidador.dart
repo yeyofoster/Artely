@@ -116,7 +116,7 @@ class _MapaCuidadorState extends State<MapaCuidador> {
         _moverRuta(0, 36.0);
 
         tracking = Timer.periodic(
-          Duration(seconds: 5),
+          Duration(seconds: 2),
           (Timer t) => sigueViaje(protegidosEnViaje.first, 0),
         );
       },
@@ -174,6 +174,13 @@ class _MapaCuidadorState extends State<MapaCuidador> {
           ),
           zoom: 16.0,
         );
+
+        if (_initialPosition == null) {
+          _initialPosition = CameraPosition(
+            target: LatLng(19.4284706, -99.1276627),
+            zoom: 16.0,
+          );
+        }
       });
       // print(datosViaje.toString());
     } catch (error) {
@@ -418,16 +425,16 @@ class _MapaCuidadorState extends State<MapaCuidador> {
                         .elementAt(protegidoSeleccionado)
                         .encodedPolyline,
                     listaDatosViaje.elementAt(protegidoSeleccionado).tipo);
-                
+
                 await sigueViaje(
                     protegidosEnViaje.elementAt(protegidoSeleccionado),
                     protegidoSeleccionado);
 
                 _moverRuta(protegidoSeleccionado, 36.0);
-                
+
                 tracking?.cancel();
                 tracking = Timer.periodic(
-                  Duration(seconds: 5),
+                  Duration(seconds: 2),
                   (Timer t) => sigueViaje(
                       protegidosEnViaje.elementAt(protegidoSeleccionado),
                       protegidoSeleccionado),
