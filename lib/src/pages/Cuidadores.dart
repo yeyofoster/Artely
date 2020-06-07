@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flare_flutter/flare_actor.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:prueba_maps/src/Shared%20preferences/Preferencias_usuario.dart';
 import 'package:prueba_maps/src/Class/Cuidador.dart';
 import 'package:prueba_maps/src/Util/VentanaEmergente.dart';
@@ -473,10 +475,37 @@ class _PantallaCuidadoresState extends State<PantallaCuidadores> {
                           eliminarDocCuidador(data.documents.first.documentID);
                           return Column(
                             children: <Widget>[
-                              Text('Eliminado :DDD'),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 20.0),
+                                child: Text(
+                                  'Eliminado',
+                                  style: GoogleFonts.manrope(
+                                    letterSpacing: 2.0,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 20.0,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.18,
+                                height:
+                                    MediaQuery.of(context).size.width * 0.18,
+                                child: FlareActor(
+                                  'assets/flare/check.flr',
+                                  animation: 'checked',
+                                ),
+                              ),
+                              Text(
+                                '${docCuid.data['Nombre']} ${docCuid.data['PApellido']} se ha eliminado de tus cuidadores.',
+                                style: GoogleFonts.openSans(
+                                    color: Colors.blueGrey),
+                                textAlign: TextAlign.center,
+                              ),
                             ],
                           );
                         } catch (e) {
+                          print(e);
                           return Column(
                             children: <Widget>[
                               Text('Ocurrió un error'),

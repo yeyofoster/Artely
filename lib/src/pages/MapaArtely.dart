@@ -66,7 +66,14 @@ class _MapaArtelyState extends State<MapaArtely> {
     _inicializaWidgets();
     pantallaPermisos = _verificarPermisos();
     // preferencias.protegidosEnViaje = [];
-    protegidosEnViaje = preferencias.protegidosEnViaje ?? [];
+    if (preferencias.protegidosEnViaje != null) {
+      print('************ Lista diferente de NULL ************');
+      if (preferencias.protegidosEnViaje.isNotEmpty) {
+        print(
+            '************ La lista no estaba vacia. Verificando usuarios en viaje. ************');
+        verificaViajesProtegidos();
+      }
+    }
 
     final notificaciones = PushNotificationsFirebase();
     notificaciones.initNotifications(preferencias.userID);
@@ -1789,5 +1796,17 @@ class _MapaArtelyState extends State<MapaArtely> {
     } else {
       _detener();
     }
+  }
+
+  //Verifica que no haya viajes que sigan marcando como activos (Protegidos).
+  Future<void> verificaViajesProtegidos() async {
+    CollectionReference bd = Firestore.instance.collection('Artely_BD');
+    for (String userID in preferencias.protegidosEnViaje) {
+      DocumentSnapshot doc = await bd.document(userID).get();
+      if (!doc.data['En_viaje']) {
+        preferencias.protegidosEnViaje.removeWhere((idDoc) => idDoc == userID);
+      }
+    }
+    protegidosEnViaje = preferencias.protegidosEnViaje;
   }
 }

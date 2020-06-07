@@ -27,6 +27,7 @@ class VentanaEmergente {
 
   void mostrarVentana(BuildContext context) {
     valoresDefault(context);
+    double maxHeight = MediaQuery.of(context).size.height;
 
     showDialog(
       context: context,
@@ -35,7 +36,7 @@ class VentanaEmergente {
         return Dialog(
           child: Container(
             width: this.width,
-            height: this.height,
+            height: maxHeight > 700 ? this.height : this.height * 1.3,
             child: Stack(
               children: <Widget>[
                 //Este el titulo del Dialog
@@ -82,11 +83,12 @@ class VentanaEmergente {
 
   //Método que regresa el Widget del titulo. Si el título es null regresa un widget vacio.
   Widget getTitle(BuildContext context) {
+    double maxHeight = MediaQuery.of(context).size.height;
     if (this.titulo == null) {
       return SizedBox();
     } else {
       return Container(
-        height: MediaQuery.of(context).size.height * 0.08,
+        height: maxHeight > 700 ? maxHeight * 0.08 : maxHeight * 0.11,
         width: this.width,
         alignment: Alignment.center,
         padding: EdgeInsets.symmetric(
@@ -109,6 +111,7 @@ class VentanaEmergente {
   }
 
   Widget getBody(BuildContext context) {
+    double maxHeight = MediaQuery.of(context).size.height;
     if (this.titulo == null) {
       return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
@@ -126,10 +129,10 @@ class VentanaEmergente {
       );
     } else {
       return Positioned(
-        top: MediaQuery.of(context).size.height * 0.08,
+        top: maxHeight > 700 ? maxHeight * 0.08 : maxHeight * 0.11,
         left: this.width * 0.008,
         child: Container(
-          height: this.height - MediaQuery.of(context).size.height * 0.09,
+          height: maxHeight > 700 ? this.height - maxHeight * 0.09 : this.height - maxHeight * 0.02,
           width: this.width * 0.82,
           alignment: Alignment.center,
           decoration: BoxDecoration(
